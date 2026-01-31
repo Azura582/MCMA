@@ -36,7 +36,7 @@ class SmartphoneBatteryModel:
         self.P_cpu_idle = 0.1     # CPU空闲功耗 (W)
         self.P_cpu_B=0.3             # CPU系数
         self.P_cpu_f=2             # CPU频率
-        self.P_cpu_max = 3.0      # CPU最大功耗 (W)
+        #self.P_cpu_max = 3.0      # CPU最大功耗 (W)
         self.P_net_idle = 0.1     # 网络空闲功耗 (W)
         self.beta = 0.1           # 网络增量系数 (W/Mbps)
         self.P_gps = 0.1          # GPS功耗 (W)
@@ -44,7 +44,7 @@ class SmartphoneBatteryModel:
         self.P_refresh= 60        #屏幕刷新率
         self.P_screen_square=1.14 #屏幕面积 dm2
         self.P_a=0.02                 #屏幕亮度系数
-        self.P_screen_max = 0.6   # 屏幕最大功耗 (W)
+        #self.P_screen_max = 0.6   # 屏幕最大功耗 (W)
         
     def V_oc(self, SOC):
         """开路电压曲线 (OCV-SOC关系)"""

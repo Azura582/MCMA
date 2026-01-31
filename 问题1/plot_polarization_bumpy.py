@@ -96,8 +96,8 @@ def simulate_and_plot():
     ax1.fill_between(t_h, U1_bumpy, total_bumpy, color='#7FDBDA', alpha=0.95, label='$U_2$ (Concentration)')
     
     # Black outline with bumps - KEY FEATURE
-    ax1.plot(t_h, U1_bumpy, color='black', linewidth=0.4)
-    ax1.plot(t_h, total_bumpy, color='black', linewidth=0.4)
+    ax1.plot(t_h, U1_bumpy, color='black', linewidth=1.0)
+    ax1.plot(t_h, total_bumpy, color='black', linewidth=1.0)
     
     # Gray line at bottom
     ax1.axhline(y=0, color='gray', linewidth=0.8)
