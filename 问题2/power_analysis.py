@@ -2,7 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from model import SmartphoneBatteryModel
 from scenery import *
-
+import sys
+from pathlib import Path
+project_root = Path(__file__).resolve().parents[1]  # 父目录的上级是 MCMA
+sys.path.insert(0, str(project_root))
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'KaiTi', 'SimSun']
 plt.rcParams['axes.unicode_minus'] = False
 

@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
+from pathlib import Path
+project_root = Path(__file__).resolve().parents[1]  # 父目录的上级是 MCMA
+sys.path.insert(0, str(project_root))
 from model import SmartphoneBatteryModel
 from scenery import *
 
