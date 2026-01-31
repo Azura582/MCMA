@@ -154,8 +154,8 @@ def plot_comprehensive_analysis(model, data):
     ax4_temp = ax4.twinx()
     ax4_temp.plot(t_h, data['T_celsius'], color='#E67E22', linewidth=1.5, label='电池温度')
     ax4_temp.axhline(25, color='green', linestyle=':', linewidth=1.5, alpha=0.6, label='环境温度')
-    ax4_temp.set_ylabel('温度 (°C)', fontweight='bold', color='#E67E22')
-    ax4_temp.tick_params(axis='y', labelcolor='#E67E22')
+    ax4_temp.set_ylabel('温度 (°C)', fontweight='bold', color="#833E85")
+    ax4_temp.tick_params(axis='y', labelcolor="#852F9D")
     # 左轴：内阻
     ax4.plot(t_h, data['R0']*1000, color='#E74C3C', linewidth=1.2, label='$R_0$ (欧姆)')
     ax4.plot(t_h, data['R1']*1000, color='#F39C12', linewidth=1.8, label='$R_1$ (电化学)', linestyle='--')

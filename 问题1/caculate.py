@@ -18,11 +18,11 @@ def simulate_discharge_times():
     
     # 不同场景
     scenarios = {
-        '视频流': scenario_video_streaming,
-        '游戏': scenario_gaming,
-        '导航': scenario_navigation,
-        '低温视频流': scenario_cold_weather,
-        '空闲':scenario_free
+        'VideoStream': scenario_video_streaming,
+        'game': scenario_gaming,
+        'navigation': scenario_navigation,
+        'VideoStream Low-Temp': scenario_cold_weather,
+        'Idle State':scenario_free
     }
     
     # 不同的初始SOC (20%, 40%, 60%, 80%, 100%)
@@ -146,9 +146,9 @@ def plot_heatmap(soc_values, results_matrix):
     ax.set_yticks(np.arange(len(scenarios)))
     ax.set_xticklabels([f'{s*100:.0f}%' for s in soc_values], fontsize=12)
     ax.set_yticklabels(scenarios, fontsize=12)
-    ax.set_xlabel('初始SOC (%)', fontsize=13, fontweight='bold')
-    ax.set_ylabel('使用场景', fontsize=13, fontweight='bold')
-    ax.set_title('放电时间热力图', fontsize=16, fontweight='bold', pad=20)
+    ax.set_xlabel('Initial SOC(%)', fontsize=13, fontweight='bold')
+    ax.set_ylabel('Use cases', fontsize=13, fontweight='bold')
+    ax.set_title('Discharge Time Heatmap', fontsize=16, fontweight='bold', pad=20)
     
     # 添加数值标注
     for i in range(len(scenarios)):
@@ -159,7 +159,7 @@ def plot_heatmap(soc_values, results_matrix):
     
     # 添加颜色条
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('放电时间 (小时)', fontsize=12, fontweight='bold')
+    cbar.set_label('Discharge Time (h)', fontsize=12, fontweight='bold')
     cbar.ax.tick_params(labelsize=10)
     
     plt.tight_layout()
