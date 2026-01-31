@@ -33,7 +33,7 @@ def simulate_full_video_discharge():
     print(f"标称电压：{model.V_nom} V")
     print("="*70)
     
-    # 运行仿真
+    # 运行仿真（启用密集输出以便插值）
     sol = model.simulate(t_span, y0, scenario_video_streaming, max_step=60)
     
     # 找到放空时间
@@ -42,19 +42,40 @@ def simulate_full_video_discharge():
     
     print(f"\n✓ 仿真完成")
     print(f"  放电时长：{t_empty_h:.2f} 小时")
-    print(f"  仿真步数：{len(sol.t)} 步")
+    print(f"  原始仿真步数：{len(sol.t)} 步")
     
-    # 截取到放空时刻
+    # ========== 插值增加绘图点数 ==========
+    from scipy.interpolate import interp1d
+    
+    # 原始数据（截取到放空时刻）
     mask = sol.t <= t_empty_s
+    t_original = sol.t[mask]
     
-    # 提取数据
+    # 创建密集时间网格（增加到5000个点，可根据需要调整）
+    n_dense_points = 5000
+    t_dense = np.linspace(0, t_empty_s, n_dense_points)
+    
+    # 对各个状态变量进行插值
+    f_soc = interp1d(t_original, sol.y[0, mask], kind='cubic', fill_value='extrapolate')
+    f_T = interp1d(t_original, sol.y[1, mask], kind='cubic', fill_value='extrapolate')
+    f_U1 = interp1d(t_original, sol.y[2, mask], kind='cubic', fill_value='extrapolate')
+    f_U2 = interp1d(t_original, sol.y[3, mask], kind='cubic', fill_value='extrapolate')
+    
+    soc_dense = f_soc(t_dense)
+    T_dense = f_T(t_dense)
+    U1_dense = f_U1(t_dense)
+    U2_dense = f_U2(t_dense)
+    
+    print(f"  插值后绘图点数：{n_dense_points} 步（增加 {n_dense_points/len(t_original):.1f}x）")
+    
+    # 提取数据（使用插值后的密集数据）
     data = {
-        't_s': sol.t[mask],
-        't_h': sol.t[mask] / 3600,
-        'SOC': sol.y[0, mask],
-        'T_batt': sol.y[1, mask],
-        'U1': sol.y[2, mask],
-        'U2': sol.y[3, mask],
+        't_s': t_dense,
+        't_h': t_dense / 3600,
+        'SOC': soc_dense,
+        'T_batt': T_dense,
+        'U1': U1_dense,
+        'U2': U2_dense,
         't_empty_h': t_empty_h
     }
     
@@ -90,248 +111,160 @@ def simulate_full_video_discharge():
     
     return model, data
 
-
-def plot_comprehensive_analysis(model, data):
-    """绘制8合1综合分析图"""
-    
-    # 配色方案（现代科研风）
-    colors = {
-        'primary': '#2E86C1',    # 蓝色
-        'secondary': '#E74C3C',  # 红色
-        'tertiary': '#27AE60',   # 绿色
-        'quaternary': '#8E44AD', # 紫色
-        'U1': '#F5B7B1',         # 粉红
-        'U2': '#AED6F1',         # 浅蓝
-        'grid': '#BDC3C7',       # 浅灰
-        'text': '#2C3E50'        # 深灰
-    }
-    
-    # 创建大图（3行3列布局，最后一个跨两列）
-    fig = plt.figure(figsize=(18, 12))
-    gs = GridSpec(3, 3, figure=fig, hspace=0.35, wspace=0.3)
+def plot_individual_charts(model, data):
+    """生成5张独立图表"""
     
     t_h = data['t_h']
     t_empty = data['t_empty_h']
     
-    # ========== 1. SOC下降曲线 ==========
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax1.plot(t_h, data['SOC']*100, color=colors['primary'], linewidth=0.5)
-    ax1.fill_between(t_h, 0, data['SOC']*100, color=colors['primary'], alpha=0.2)
-    ax1.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5)
-    ax1.set_xlabel('时间 (h)', fontweight='bold')
-    ax1.set_ylabel('SOC (%)', fontweight='bold')
-    ax1.set_title('① 荷电状态 (SOC)', fontsize=13, fontweight='bold', pad=10)
+    # ========== 图1: SOC荷电状态 ==========
+    fig1, ax1 = plt.subplots(figsize=(10, 6))
+    ax1.plot(t_h, data['SOC']*100, color='#2E86C1', linewidth=2.5)
+    ax1.fill_between(t_h, 0, data['SOC']*100, color='#2E86C1', alpha=0.2)
+    ax1.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=2)
+    ax1.set_xlabel('时间 (h)', fontweight='bold', fontsize=13)
+    ax1.set_ylabel('SOC (%)', fontweight='bold', fontsize=13)
+    ax1.set_title('① 荷电状态 (SOC)', fontsize=15, fontweight='bold', pad=15)
     ax1.grid(True, alpha=0.3, linestyle='--')
     ax1.set_xlim([0, t_empty*1.05])
     ax1.set_ylim([0, 105])
+    plt.tight_layout()
+    plt.savefig('1_SOC曲线.png', dpi=400, bbox_inches='tight')
+    print("✓ 图1已保存: 1_SOC曲线.png")
+    plt.close()
     
-    # ========== 2. 开路电压OCV ==========
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax2.plot(t_h, data['V_oc'], color=colors['tertiary'], linewidth=2.5)
-    ax2.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5)
-    ax2.set_xlabel('时间 (h)', fontweight='bold')
-    ax2.set_ylabel('电压 (V)', fontweight='bold')
-    ax2.set_title('② 开路电压 ($V_{oc}$)', fontsize=13, fontweight='bold', pad=10)
+    # ========== 图2: 极化电压堆叠 ==========
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    total = data['U1'] + data['U2']
+    ax2.fill_between(t_h, 0, data['U1'], color='#F5B7B1', alpha=0.85, label='$U_1$ (电化学)')
+    ax2.fill_between(t_h, data['U1'], total, color='#AED6F1', alpha=0.85, label='$U_2$ (浓度)')
+    ax2.plot(t_h, data['U1'], color="#100E0E", linewidth=0.5)
+    ax2.plot(t_h, total, color="#131415", linewidth=0.5)
+    ax2.axhline(0, color='black', linestyle='-', linewidth=1.5, alpha=0.5)
+    ax2.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=2)
+    ax2.set_xlabel('时间 (h)', fontweight='bold', fontsize=13)
+    ax2.set_ylabel('极化电压 (V)', fontweight='bold', fontsize=13)
+    ax2.set_title('③ 极化电压堆叠', fontsize=15, fontweight='bold', pad=15)
+    ax2.legend(loc='best', fontsize=11, framealpha=0.9)
     ax2.grid(True, alpha=0.3, linestyle='--')
     ax2.set_xlim([0, t_empty*1.05])
+    plt.tight_layout()
+    plt.savefig('2_极化电压.png', dpi=400, bbox_inches='tight')
+    print("✓ 图2已保存: 2_极化电压.png")
+    plt.close()
     
-    # ========== 3. 极化电压U1/U2堆叠 ==========
-    ax3 = fig.add_subplot(gs[0, 2])
-    total = data['U1'] + data['U2']
-    ax3.fill_between(t_h, 0, data['U1'], color=colors['U1'], alpha=0.85, label='$U_1$ (电化学)')
-    ax3.fill_between(t_h, data['U1'], total, color=colors['U2'], alpha=0.85, label='$U_2$ (浓度)')
-    ax3.plot(t_h, data['U1'], color='#C0392B', linewidth=1.3)
-    ax3.plot(t_h, total, color='#2E86C1', linewidth=1.3)
-    ax3.axhline(0, color='black', linestyle='-', linewidth=1.2, alpha=0.5)
-    ax3.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5)
-    ax3.set_xlabel('时间 (h)', fontweight='bold')
-    ax3.set_ylabel('极化电压 (V)', fontweight='bold')
-    ax3.set_title('③ 极化电压堆叠', fontsize=13, fontweight='bold', pad=10)
-    ax3.legend(loc='best', fontsize=9, framealpha=0.9)
+    # ========== 图3: 内阻+温度双轴 ==========
+    fig3, ax3 = plt.subplots(figsize=(10, 6))
+    
+    # 左轴：内阻
+    ax3.plot(t_h, data['R0']*1000, color='#E74C3C', linewidth=2.5, label='$R_0$ (欧姆)')
+    ax3.plot(t_h, data['R1']*1000, color='#F39C12', linewidth=2.5, label='$R_1$ (电化学)', linestyle='--')
+    ax3.plot(t_h, data['R2']*1000, color='#9B59B6', linewidth=2.5, label='$R_2$ (浓度)', linestyle='--')
+    ax3.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=2)
+    ax3.set_xlabel('时间 (h)', fontweight='bold', fontsize=13)
+    ax3.set_ylabel('内阻 (mΩ)', fontweight='bold', fontsize=13, color="#110F0F")
+    ax3.tick_params(axis='y', labelcolor="#131111")
+    ax3.set_title('④ 内阻与温度变化', fontsize=15, fontweight='bold', pad=15)
     ax3.grid(True, alpha=0.3, linestyle='--')
     ax3.set_xlim([0, t_empty*1.05])
     
-    # ========== 4. 内阻 + 温度（双Y轴）==========
-    ax4 = fig.add_subplot(gs[1, 0])
-    
-    ax4_temp = ax4.twinx()
-    ax4_temp.plot(t_h, data['T_celsius'], color='#E67E22', linewidth=1.5, label='电池温度')
-    ax4_temp.axhline(25, color='green', linestyle=':', linewidth=1.5, alpha=0.6, label='环境温度')
-    ax4_temp.set_ylabel('温度 (°C)', fontweight='bold', color="#833E85")
-    ax4_temp.tick_params(axis='y', labelcolor="#852F9D")
-    # 左轴：内阻
-    ax4.plot(t_h, data['R0']*1000, color='#E74C3C', linewidth=1.2, label='$R_0$ (欧姆)')
-    ax4.plot(t_h, data['R1']*1000, color='#F39C12', linewidth=1.8, label='$R_1$ (电化学)', linestyle='--')
-    ax4.plot(t_h, data['R2']*1000, color='#9B59B6', linewidth=1.8, label='$R_2$ (浓度)', linestyle='--')
-    ax4.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5)
-    ax4.set_xlabel('时间 (h)', fontweight='bold')
-    ax4.set_ylabel('内阻 (mΩ)', fontweight='bold', color="#110F0F")
-    ax4.tick_params(axis='y', labelcolor="#131111")
-    ax4.set_title('内阻与温度变化', fontsize=13, fontweight='bold', pad=10)
-    ax4.grid(True, alpha=0.3, linestyle='--')
-    ax4.set_xlim([0, t_empty*1.05])
-    
     # 右轴：温度
-    
+    ax3_temp = ax3.twinx()
+    ax3_temp.plot(t_h, data['T_celsius'], color="#3B857C", linewidth=2.5, label='电池温度')
+    ax3_temp.axhline(25, color='green', linestyle=':', linewidth=2, alpha=0.6, label='环境温度')
+    ax3_temp.set_ylabel('温度 (°C)', fontweight='bold', fontsize=13, color="#833E85")
+    ax3_temp.tick_params(axis='y', labelcolor="#852F9D")
     
     # 合并图例
-    lines1, labels1 = ax4.get_legend_handles_labels()
-    lines2, labels2 = ax4_temp.get_legend_handles_labels()
-    ax4.legend(lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=8, framealpha=0.9)
+    lines1, labels1 = ax3.get_legend_handles_labels()
+    lines2, labels2 = ax3_temp.get_legend_handles_labels()
+    ax3.legend(lines1 + lines2, labels1 + labels2, loc='upper left', fontsize=10, framealpha=0.9)
     
-    # ========== 5. 放电电流 ==========
-    ax5 = fig.add_subplot(gs[1, 1])
-    ax5.plot(t_h, data['I_A'], color=colors['secondary'], linewidth=0.5)
-    ax5.fill_between(t_h, 0, data['I_A'], color=colors['secondary'], alpha=0.2)
-    ax5.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=0.5)
-    ax5.set_xlabel('时间 (h)', fontweight='bold')
-    ax5.set_ylabel('电流 (A)', fontweight='bold')
-    ax5.set_title('⑤ 放电电流', fontsize=13, fontweight='bold', pad=10)
-    ax5.grid(True, alpha=0.3, linestyle='--')
-    ax5.set_xlim([0, t_empty*1.05])
+    plt.tight_layout()
+    plt.savefig('3_内阻与温度.png', dpi=400, bbox_inches='tight')
+    print("✓ 图3已保存: 3_内阻与温度.png")
+    plt.close()
     
-    # ========== 6. 终端电压 ==========
-    ax6 = fig.add_subplot(gs[1, 2])
-    ax6.plot(t_h, data['V_terminal'], color='#16A085', linewidth=2.5, label='终端电压')
-    ax6.plot(t_h, data['V_oc'], color='#27AE60', linewidth=1.8, linestyle='--', alpha=0.7, label='开路电压')
-    ax6.axhline(2.5, color='red', linestyle=':', linewidth=1.5, alpha=0.6, label='截止电压')
-    ax6.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5)
-    ax6.set_xlabel('时间 (h)', fontweight='bold')
-    ax6.set_ylabel('电压 (V)', fontweight='bold')
-    ax6.set_title('⑥ 终端电压 vs 开路电压', fontsize=13, fontweight='bold', pad=10)
-    ax6.legend(loc='best', fontsize=9, framealpha=0.9)
-    ax6.grid(True, alpha=0.3, linestyle='--')
-    ax6.set_xlim([0, t_empty*1.05])
+    # ========== 图4: 放电电流 ==========
+    fig4, ax4 = plt.subplots(figsize=(10, 6))
+    ax4.plot(t_h, data['I_A'], color="#1B1F22", linewidth=1.5)
+    ax4.fill_between(t_h, 0, data['I_A'], color='#E74C3C', alpha=0.2)
+    ax4.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=2)
+    ax4.set_xlabel('时间 (h)', fontweight='bold', fontsize=13)
+    ax4.set_ylabel('电流 (A)', fontweight='bold', fontsize=13)
+    ax4.set_title('⑤ 放电电流', fontsize=15, fontweight='bold', pad=15)
+    ax4.grid(True, alpha=0.3, linestyle='--')
+    ax4.set_xlim([0, t_empty*1.05])
+    plt.tight_layout()
+    plt.savefig('4_放电电流.png', dpi=400, bbox_inches='tight')
+    print("✓ 图4已保存: 4_放电电流.png")
+    plt.close()
     
-    # ========== 7. 功率消耗 ==========
-    ax7 = fig.add_subplot(gs[2, :])  # 跨三列
-    ax7.plot(t_h, data['P_total'], color='#8E44AD', linewidth=2.5, label='总功率')
-    ax7.fill_between(t_h, 0, data['P_total'], color='#8E44AD', alpha=0.2)
+    # ========== 图5: 参数汇总表格 ==========
+    fig5, ax5 = plt.subplots(figsize=(10, 8))
+    ax5.axis('off')
     
-    # 计算平均功率
-    P_avg = np.mean(data['P_total'])
-    ax7.axhline(P_avg, color='orange', linestyle='--', linewidth=2, alpha=0.7, 
-                label=f'平均功率 = {P_avg:.3f} W')
-    ax7.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=1.5, 
-                label=f'放空时刻 = {t_empty:.2f}h')
-    
-    ax7.set_xlabel('时间 (h)', fontweight='bold')
-    ax7.set_ylabel('功率 (W)', fontweight='bold')
-    ax7.set_title('⑦ 功率消耗曲线', fontsize=13, fontweight='bold', pad=10)
-    ax7.legend(loc='best', fontsize=10, framealpha=0.9)
-    ax7.grid(True, alpha=0.3, linestyle='--')
-    ax7.set_xlim([0, t_empty*1.05])
-    
-    # 总标题
-    fig.suptitle('满电常温刷视频场景 - 完整放电分析 (7合1)', 
-                 fontsize=16, fontweight='bold', y=0.995)
-    
-    plt.savefig('video_full_analysis_8in1.png', dpi=400, bbox_inches='tight')
-    print("\n✓ 7合1综合分析图已保存：video_full_analysis_8in1.png")
-    plt.show()
-
-
-def plot_energy_statistics(model, data):
-    """绘制能量统计图"""
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    
-    t_h = data['t_h']
-    t_empty = data['t_empty_h']
-    
-    # 计算能量相关量
-    E_discharged = np.cumsum(data['P_total'] * np.gradient(data['t_s'])) / 3600  # Wh
+    # 计算能量
+    E_discharged = np.cumsum(data['P_total'] * np.gradient(data['t_s'])) / 3600
     E_total = E_discharged[-1]
     
-    # 1. 累积放电能量
-    ax = axes[0, 0]
-    ax.plot(t_h, E_discharged, color='#2E86C1', linewidth=2.5)
-    ax.fill_between(t_h, 0, E_discharged, color='#2E86C1', alpha=0.2)
-    ax.set_xlabel('时间 (h)', fontweight='bold', fontsize=11)
-    ax.set_ylabel('累积能量 (Wh)', fontweight='bold', fontsize=11)
-    ax.set_title(f'累积放电能量 (总计: {E_total:.2f} Wh)', fontsize=12, fontweight='bold')
-    ax.grid(True, alpha=0.3, linestyle='--')
-    
-    # 2. SOC vs OCV曲线（特性曲线）
-    ax = axes[0, 1]
-    ax.plot(data['SOC']*100, data['V_oc'], color='#27AE60', linewidth=2.5, marker='o', 
-            markersize=2, markevery=50)
-    ax.set_xlabel('SOC (%)', fontweight='bold', fontsize=11)
-    ax.set_ylabel('开路电压 (V)', fontweight='bold', fontsize=11)
-    ax.set_title('OCV-SOC特性曲线', fontsize=12, fontweight='bold')
-    ax.grid(True, alpha=0.3, linestyle='--')
-    ax.set_xlim([0, 100])
-    
-    # 3. 内阻 vs SOC
-    ax = axes[1, 0]
-    ax.plot(data['SOC']*100, data['R0']*1000, color='#E74C3C', linewidth=2.5, label='$R_0$')
-    ax.plot(data['SOC']*100, data['R1']*1000, color='#F39C12', linewidth=2, label='$R_1$', linestyle='--')
-    ax.plot(data['SOC']*100, data['R2']*1000, color='#9B59B6', linewidth=2, label='$R_2$', linestyle='-.')
-    ax.set_xlabel('SOC (%)', fontweight='bold', fontsize=11)
-    ax.set_ylabel('内阻 (mΩ)', fontweight='bold', fontsize=11)
-    ax.set_title('内阻-SOC特性曲线', fontsize=12, fontweight='bold')
-    ax.legend(loc='best', fontsize=10, framealpha=0.9)
-    ax.grid(True, alpha=0.3, linestyle='--')
-    ax.set_xlim([0, 100])
-    
-    # 4. 关键参数汇总（文字表格）
-    ax = axes[1, 1]
-    ax.axis('off')
-    
-    # 计算统计量
+    # 参数汇总文本
     stats_text = f"""
-    【关键参数统计】
+    【关键参数统计汇总】
     
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    放电时长：     {t_empty:.2f} 小时
-    总放电能量：   {E_total:.2f} Wh
-    平均功率：     {np.mean(data['P_total']):.3f} W
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    初始SOC：      {data['SOC'][0]*100:.1f}%
-    终止SOC：      {data['SOC'][-1]*100:.1f}%
-    SOC变化：      {(data['SOC'][0]-data['SOC'][-1])*100:.1f}%
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    初始OCV：      {data['V_oc'][0]:.3f} V
-    终止OCV：      {data['V_oc'][-1]:.3f} V
-    OCV下降：      {data['V_oc'][0]-data['V_oc'][-1]:.3f} V
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    电流范围：     {data['I_A'].min():.3f} ~ {data['I_A'].max():.3f} A
-    平均电流：     {np.mean(data['I_A']):.3f} A
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    温度范围：     {data['T_celsius'].min():.2f} ~ {data['T_celsius'].max():.2f} °C
-    温升：         {data['T_celsius'].max()-data['T_celsius'].min():.2f} °C
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    电池容量：     {model.Q0:.2f} mAh
-    标称电压：     {model.V_nom} V
-    理论能量：     {model.Q0*model.V_nom/1000:.2f} Wh
-    能量效率：     {E_total/(model.Q0*model.V_nom/1000)*100:.1f}%
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ⏱  放电时长：         {t_empty:.2f} 小时
+    ⚡ 总放电能量：       {E_total:.2f} Wh
+    📊 平均功率：         {np.mean(data['P_total']):.3f} W
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🔋 初始SOC：          {data['SOC'][0]*100:.1f}%
+    🔋 终止SOC：          {data['SOC'][-1]*100:.1f}%
+    📉 SOC变化：          {(data['SOC'][0]-data['SOC'][-1])*100:.1f}%
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🔌 初始OCV：          {data['V_oc'][0]:.3f} V
+    🔌 终止OCV：          {data['V_oc'][-1]:.3f} V
+    📉 OCV下降：          {data['V_oc'][0]-data['V_oc'][-1]:.3f} V
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ⚡ 电流范围：         {data['I_A'].min():.3f} ~ {data['I_A'].max():.3f} A
+    ⚡ 平均电流：         {np.mean(data['I_A']):.3f} A
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🌡  温度范围：         {data['T_celsius'].min():.2f} ~ {data['T_celsius'].max():.2f} °C
+    🌡  温升：             {data['T_celsius'].max()-data['T_celsius'].min():.2f} °C
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🔋 电池容量：         {model.Q0:.2f} mAh
+    🔌 标称电压：         {model.V_nom} V
+    📦 理论能量：         {model.Q0*model.V_nom/1000:.2f} Wh
+    ✅ 能量效率：         {E_total/(model.Q0*model.V_nom/1000)*100:.1f}%
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     """
     
-    ax.text(0.05, 0.95, stats_text, transform=ax.transAxes, 
-            fontsize=11, verticalalignment='top', family='monospace',
-            bbox=dict(boxstyle='round', facecolor='#ECF0F1', alpha=0.8, edgecolor='#34495E', linewidth=2))
+    ax5.text(0.5, 0.5, stats_text, transform=ax5.transAxes, 
+            fontsize=13, verticalalignment='center', horizontalalignment='center',
+            family='monospace',
+            bbox=dict(boxstyle='round,pad=1.5', facecolor='#ECF0F1', 
+                     alpha=0.95, edgecolor='#34495E', linewidth=3))
     
-    fig.suptitle('能量分析与特性曲线', fontsize=15, fontweight='bold', y=0.98)
+    fig5.suptitle('⑤ 关键参数统计汇总', fontsize=16, fontweight='bold', y=0.95)
     plt.tight_layout()
-    plt.savefig('video_energy_analysis.png', dpi=400, bbox_inches='tight')
-    print("✓ 能量分析图已保存：video_energy_analysis.png")
-    plt.show()
+    plt.savefig('5_参数汇总.png', dpi=400, bbox_inches='tight')
+    print("✓ 图5已保存: 5_参数汇总.png")
+    plt.close()
 
 
 if __name__ == '__main__':
     # 运行仿真
     model, data = simulate_full_video_discharge()
     
-    # 绘制8合1综合分析图
-    plot_comprehensive_analysis(model, data)
-    
-    # 绘制能量统计分析图
-    plot_energy_statistics(model, data)
+    # 生成5张独立图表
+    plot_individual_charts(model, data)
     
     print("\n" + "="*70)
-    print("所有分析图表生成完成！")
+    print("所有独立图表生成完成！")
     print("="*70)
     print("生成的文件：")
-    print("  1. video_full_analysis_8in1.png   - 8合1综合分析图")
-    print("  2. video_energy_analysis.png      - 能量与特性曲线分析")
+    print("  1. 1_SOC曲线.png        - SOC荷电状态")
+    print("  2. 2_极化电压.png       - 极化电压堆叠")
+    print("  3. 3_内阻与温度.png     - 内阻与温度双轴")
+    print("  4. 4_放电电流.png       - 放电电流曲线")
+    print("  5. 5_参数汇总.png       - 关键参数统计")
     print("="*70)

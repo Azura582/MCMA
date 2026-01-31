@@ -184,11 +184,11 @@ class SmartphoneBatteryModel:
         
         # 2. 电化学极化电压变化率 (V/s)
         # dU1/dt = (I*R1 - U1) / tau1
-        dU1_dt = (I_A * R1 - U1) / self.tau1
+        dU1_dt = (I_A * R1 - U1) / (R1*self.C1)
         
         # 3. 浓度极化电压变化率 (V/s)
         # dU2/dt = (I*R2 - U2) / tau2
-        dU2_dt = (I_A * R2 - U2) / self.tau2
+        dU2_dt = (I_A * R2 - U2) / (R2*self.C2)
         
         # 4. 温度变化率 (K/s)
         # 总热损耗 = I^2 * (R0 + R1 + R2)

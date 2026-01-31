@@ -1,18 +1,38 @@
 # 使用场景定义函数
+import numpy as np
+
 def scenario_video_streaming(t):
-    """视频流场景"""
+    """视频流场景 - 使用平滑的周期性波动模拟真实使用"""
+    # 基础参数
+    base_brightness = 0.7
+    base_cpu = 0.3
+    base_data_rate = 2.0
+    
+    # 使用正弦函数模拟平滑的周期性变化
+    # 周期约1小时,模拟用户注意力波动和内容复杂度变化
+    period = 3600  # 1小时周期
+    phase = 2 * np.pi * t / period
+    
+    # 亮度变化: 0.5-0.9之间平滑波动
+    brightness = base_brightness + 0.2 * np.sin(phase)
+    brightness = np.clip(brightness, 0.5, 0.9)
+    
+    # CPU使用率: 0.2-0.4之间波动(视频解码负载变化)
+    cpu_usage = base_cpu + 0.1 * np.sin(phase + np.pi/4)
+    cpu_usage = np.clip(cpu_usage, 0.2, 0.4)
+    
+    # 数据率: 1.5-2.5 Mbps之间波动(码率自适应)
+    data_rate = base_data_rate + 0.5 * np.sin(phase + np.pi/2)
+    data_rate = np.clip(data_rate, 1.5, 2.5)
+    
     scenario = {
         'screen_on': True,
-        'brightness': 0.7,
-        'cpu_usage': 0.3,
-        'data_rate': 2.0,  # Mbps
+        'brightness': brightness,
+        'cpu_usage': cpu_usage,
+        'data_rate': data_rate,
         'gps_on': False,
         'T_amb': 298.15  # 25°C
     }
-    # 模拟周期性变化
-    if t % 3600 < 1800:  # 每半小时休息5分钟
-        scenario['screen_on'] = False
-        scenario['cpu_usage'] = 0.1
     return scenario
 
 def scenario_gaming(t):
