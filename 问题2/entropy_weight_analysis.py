@@ -1,111 +1,106 @@
+"""
+Entropy Weight Method Analysis - Component Impact on Total Energy Consumption
+5 Scenarios, 5 Components, Donut Chart Visualization
+"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 from pathlib import Path
-project_root = Path(__file__).resolve().parents[1]  # 父目录的上级是 MCMA
+
+project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root))
 from model import SmartphoneBatteryModel
-from scenery import *
+from scenery import (scenario_video_streaming, scenario_gaming, 
+                     scenario_navigation, scenario_free, scenario_cold_weather)
 
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'KaiTi', 'SimSun']
+# English fonts
+plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['axes.unicode_minus'] = False
 
 
 class EntropyWeightAnalyzer:
-    """熵权法分析器 - 评估各组件对续航的影响程度"""
+    """Entropy Weight Analyzer - Component Impact Assessment"""
     
     def __init__(self):
         self.battery = SmartphoneBatteryModel()
         
     def collect_data(self):
-        """
-        收集4个场景（视频、游戏、导航、空闲）的数据
-        返回：功耗数据和续航时间
+        """ 
+        Collect data from 5 scenarios
+        Returns: power data matrix (5 scenarios × 5 components)
         """
         scenarios = {
-            '视频流': scenario_video_streaming,
-            '游戏': scenario_gaming,
-            '导航': scenario_navigation,
-            '空闲': scenario_free
+            'Video Streaming': scenario_video_streaming,
+            'Gaming': scenario_gaming,
+            'Navigation': scenario_navigation,
+            'Idle': scenario_free,
+            'Cold Weather': scenario_cold_weather
         }
         
-        # 存储数据矩阵
+        # Data matrix
         data_matrix = []
         scenario_names = []
-        discharge_times = []
         
         print("="*70)
-        print("收集场景数据用于熵权法分析")
+        print("Collecting Data from 5 Scenarios for Entropy Weight Analysis")
         print("="*70)
         
         for name, func in scenarios.items():
             scenario = func(0)
             
-            # 提取各组件参数（原始值，不是功耗）
-            screen_brightness = scenario.get('brightness', 0.0) if scenario.get('screen_on', False) else 0.0
-            cpu_usage = scenario.get('cpu_usage', 0.0)
-            data_rate = scenario.get('data_rate', 0.0)
-            gps_on = 1.0 if scenario.get('gps_on', False) else 0.0
-            
-            # 计算功耗
+            # Calculate component power
             components = self._calculate_power_components(scenario)
             total_power = sum(components.values())
             
-            # 估算满电续航时间（简化计算）
-            battery_energy = self.battery.Q0 * self.battery.V_nom  # mAh * V = mWh
-            discharge_time = battery_energy / (total_power * 1000)  # 小时
-            
             data_matrix.append([
-                components['屏幕'],
+                components['Screen'],
                 components['CPU'],
-                components['网络'],
+                components['Network'],
                 components['GPS'],
-                components['基础']
+                components['Base']
             ])
             
             scenario_names.append(name)
-            discharge_times.append(discharge_time)
             
             print(f"\n【{name}】")
-            print(f"  屏幕功耗: {components['屏幕']:.3f} W")
-            print(f"  CPU功耗: {components['CPU']:.3f} W")
-            print(f"  网络功耗: {components['网络']:.3f} W")
-            print(f"  GPS功耗: {components['GPS']:.3f} W")
-            print(f"  基础功耗: {components['基础']:.3f} W")
-            print(f"  总功耗: {total_power:.3f} W")
-            print(f"  预计续航: {discharge_time:.2f} 小时")
+            print(f"  Screen:  {components['Screen']:.3f} W")
+            print(f"  CPU:     {components['CPU']:.3f} W")
+            print(f"  Network: {components['Network']:.3f} W")
+            print(f"  GPS:     {components['GPS']:.3f} W")
+            print(f"  Base:    {components['Base']:.3f} W")
+            print(f"  Total:   {total_power:.3f} W")
         
         print("\n" + "="*70)
         
-        return np.array(data_matrix), scenario_names, discharge_times
+        return np.array(data_matrix), scenario_names
     
     def _calculate_power_components(self, scenario):
-        """计算各组件功耗"""
+        """Calculate component power"""
         components = {
-            '屏幕': 0.0,
+            'Screen': 0.0,
             'CPU': 0.0,
-            '网络': 0.0,
+            'Network': 0.0,
             'GPS': 0.0,
-            '基础': self.battery.P_base
+            'Base': self.battery.P_base
         }
         
-        # 屏幕功耗
+        # Screen power
         if scenario.get('screen_on', False):
             brightness = float(np.clip(scenario.get('brightness', 0.5), 0.0, 1.0))
-            components['屏幕'] = self.battery.P_a * brightness * self.battery.P_refresh * self.battery.P_screen_square
+            components['Screen'] = self.battery.P_a * brightness * self.battery.P_refresh * self.battery.P_screen_square
         
-        # CPU功耗
+        # CPU power
         if 'cpu_usage' in scenario:
             cpu_usage = float(np.clip(scenario.get('cpu_usage', 0.0), 0.0, 1.0))
-            components['CPU'] = self.battery.P_cpu_idle + cpu_usage * self.battery.P_cpu_B * (self.battery.P_cpu_f ** 3)
+            components['CPU'] = self.battery.P_cpu_idle + cpu_usage * self.battery.P_cpu_B * (self.battery.P_cpu_f ** 2)
         
-        # 网络功耗
+        # Network power
         if 'data_rate' in scenario:
             data_rate = max(0.0, float(scenario.get('data_rate', 0.0)))
-            components['网络'] = self.battery.P_net_idle + self.battery.beta * data_rate
+            components['Network'] = self.battery.P_net_idle + self.battery.beta * data_rate
         
-        # GPS功耗
+        # GPS power
         if scenario.get('gps_on', False):
             components['GPS'] = self.battery.P_gps
         
@@ -161,16 +156,19 @@ class EntropyWeightAnalyzer:
             # 计算信息熵
             entropy[j] = -k * np.sum(p * np.log(p))
         
-        print("\n2. 各指标的信息熵 e_j:")
-        component_names = ['屏幕', 'CPU', '网络', 'GPS', '基础']
+        print("\n2. Information Entropy e_j:")
+        component_names = ['Screen', 'CPU', 'Network', 'GPS', 'Base']
         for i, name in enumerate(component_names):
             print(f"   {name}: {entropy[i]:.6f}")
         
-        # 步骤3: 计算信息效用值（差异系数）
-        # d_j = 1 - e_j，熵越大，差异越小，权重越小
+        # 步骤3: 计算信息效用值(差异系数)
+        # d_j = 1 - e_j,熵越大,差异越小,权重越小
         divergence = 1 - entropy
         
-        print("\n3. 信息效用值 d_j = 1 - e_j:")
+        # Handle negative weights (for features with no variation)
+        divergence = np.maximum(divergence, 1e-10)  # Ensure all divergences are positive
+        
+        print("\n3. Divergence d_j = 1 - e_j:")
         for i, name in enumerate(component_names):
             print(f"   {name}: {divergence[i]:.6f}")
         
@@ -178,145 +176,107 @@ class EntropyWeightAnalyzer:
         # w_j = d_j / sum(d_j)
         weights = divergence / np.sum(divergence)
         
-        print("\n4. 熵权法计算的权重 w_j:")
+        print("\n4. Entropy Weights w_j:")
         for i, name in enumerate(component_names):
             print(f"   {name}: {weights[i]:.6f} ({weights[i]*100:.2f}%)")
         
         print("\n" + "="*70)
         
         return weights
-    
-    def analyze_impact(self, data_matrix, weights, scenario_names):
-        """
-        分析各组件对续航的综合影响
-        """
-        print("\n" + "="*70)
-        print("各场景综合影响评分（加权求和）")
-        print("="*70)
-        
-        component_names = ['屏幕', 'CPU', '网络', 'GPS', '基础']
-        
-        # 计算每个场景的综合得分
-        scores = np.dot(data_matrix, weights)
-        
-        for i, name in enumerate(scenario_names):
-            print(f"\n【{name}】综合影响评分: {scores[i]:.4f}")
-            print("  各组件贡献:")
-            for j, comp in enumerate(component_names):
-                contribution = data_matrix[i, j] * weights[j]
-                print(f"    {comp}: {data_matrix[i, j]:.3f}W × {weights[j]:.4f} = {contribution:.4f}")
-        
-        print("\n" + "="*70)
-        
-        return scores
 
 
-def plot_entropy_weights(weights, component_names):
-    """绘制权重柱状图"""
-    print("\n生成熵权法权重图...")
+def plot_donut_chart(weights, component_names):
+    """Plot donut chart showing entropy weights"""
+    print("\nGenerating Entropy Weight Donut Chart...")
     
-    fig, ax = plt.subplots(figsize=(10, 6), facecolor='#0a0e27')
-    ax.set_facecolor('#0a0e27')
+    fig, ax = plt.subplots(figsize=(10, 8))
     
-    x = np.arange(len(component_names))
-    colors = ['#00D9FF', '#FFD700', '#4ECDC4', '#FF6B6B', '#95E1D3']
+    # Colors for components
+    colors = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6']
     
-    bars = ax.bar(x, weights, color=colors, alpha=0.9, edgecolor='white', linewidth=2)
+    # Create donut chart
+    wedges, texts, autotexts = ax.pie(
+        weights,
+        labels=component_names,
+        colors=colors,
+        autopct='%1.1f%%',
+        startangle=90,
+        pctdistance=0.85,
+        wedgeprops=dict(width=0.4, edgecolor='black', linewidth=1.5)
+    )
     
-    # 添加数值标签
-    for bar, weight in zip(bars, weights):
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
-               f'{weight:.4f}\n({weight*100:.2f}%)',
-               ha='center', va='bottom', fontsize=11, 
-               fontweight='bold', color='white')
+    # Customize text
+    for text in texts:
+        text.set_fontsize(13)
+        text.set_fontweight('bold')
     
-    ax.set_xlabel('功耗组件', fontsize=13, fontweight='bold', color='white')
-    ax.set_ylabel('熵权法权重', fontsize=13, fontweight='bold', color='white')
-    ax.set_title('各组件对续航影响程度（熵权法）\nEntropy Weight Method - Component Impact Analysis', 
-                fontsize=16, fontweight='bold', color='white', pad=20,
-                bbox=dict(boxstyle='round,pad=0.5', facecolor='#1a2332', 
-                         edgecolor='#00D9FF', linewidth=2))
-    ax.set_xticks(x)
-    ax.set_xticklabels(component_names, fontsize=12, color='white', fontweight='bold')
-    ax.tick_params(colors='white', labelsize=11)
-    ax.set_ylim(0, max(weights) * 1.3)
+    for autotext in autotexts:
+        autotext.set_color('white')
+        autotext.set_fontsize(12)
+        autotext.set_fontweight('bold')
     
-    # 网格
-    ax.grid(True, alpha=0.2, axis='y', linestyle='--', color='#00D9FF')
+    # Center text
+    ax.text(0, 0, 'Component\nImpact\nWeights', 
+            ha='center', va='center', fontsize=14, fontweight='bold',
+            bbox=dict(boxstyle='circle,pad=0.3', facecolor='#ECF0F1', 
+                     edgecolor='#2C3E50', linewidth=2))
     
-    # 设置坐标轴颜色
-    ax.spines['bottom'].set_color('#00D9FF')
-    ax.spines['left'].set_color('#00D9FF')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_linewidth(2)
-    ax.spines['left'].set_linewidth(2)
-    
-    # 添加说明文字
-    textstr = '权重越大，对续航影响越显著\n熵权法基于数据差异性自动赋权'
-    props = dict(boxstyle='round', facecolor='#1a2332', edgecolor='#00FF94', 
-                linewidth=2, alpha=0.9)
-    ax.text(0.98, 0.95, textstr, transform=ax.transAxes, fontsize=10,
-           verticalalignment='top', horizontalalignment='right',
-           bbox=props, color='#00FF94', fontweight='bold')
+    # Title
+    #ax.set_title('Entropy Weight Method: Component Impact on Total Energy Consumption\n(Based on 5 Scenarios)',
+      #           fontsize=15, fontweight='bold', pad=20)
     
     plt.tight_layout()
-    plt.savefig('entropy_weights.png', dpi=300, bbox_inches='tight',
-                facecolor='#0a0e27', edgecolor='none')
-    print("熵权法权重图已保存为 entropy_weights.png")
-    plt.show()
+    plt.savefig('entropy_weights.png', dpi=400, bbox_inches='tight',
+                facecolor='white', edgecolor='none')
+    print("✓ Donut chart saved: entropy_weights.png")
+    plt.close()
 
 
-# 主程序
+# Main program
 if __name__ == "__main__":
     print("="*70)
-    print("熵权法分析系统 - 各组件对续航影响程度评估")
-    print("Entropy Weight Method - Battery Life Impact Analysis")
+    print("ENTROPY WEIGHT METHOD ANALYSIS")
+    print("Component Impact on Total Energy Consumption")
+    print("5 Scenarios × 5 Components")
     print("="*70)
     
-    # 创建分析器
+    # Create analyzer
     analyzer = EntropyWeightAnalyzer()
     
-    # 收集数据（4个场景：视频、游戏、导航、空闲）
-    data_matrix, scenario_names, discharge_times = analyzer.collect_data()
+    # Collect data (5 scenarios)
+    data_matrix, scenario_names = analyzer.collect_data()
     
-    # 使用熵权法计算权重
-    component_names = ['屏幕', 'CPU', '网络', 'GPS', '基础']
+    # Calculate entropy weights
+    component_names = ['Screen', 'CPU', 'Network', 'GPS', 'Base']
     weights = analyzer.calculate_entropy_weights(data_matrix)
     
-    # 分析综合影响
-    scores = analyzer.analyze_impact(data_matrix, weights, scenario_names)
-    
-    # 生成可视化图表
-    plot_entropy_weights(weights, component_names)
+    # Plot donut chart
+    plot_donut_chart(weights, component_names)
    
-    # 输出结论
+    # Output conclusion
     print("\n" + "="*70)
-    print("熵权法分析结论")
+    print("ENTROPY WEIGHT ANALYSIS RESULTS")
     print("="*70)
     
-    # 找出影响最大和最小的组件
+    # Find max and min impact components
     max_idx = np.argmax(weights)
     min_idx = np.argmin(weights)
     
-    print(f"\n📊 影响程度排序（从大到小）：")
+    print(f"\n📊 Impact Ranking (Descending):")
     sorted_indices = np.argsort(weights)[::-1]
     for rank, idx in enumerate(sorted_indices, 1):
         print(f"  {rank}. {component_names[idx]}: {weights[idx]:.4f} ({weights[idx]*100:.2f}%)")
     
-    print(f"\n🔥 对续航影响最大的组件: {component_names[max_idx]} (权重: {weights[max_idx]:.4f})")
-    print(f"💡 对续航影响最小的组件: {component_names[min_idx]} (权重: {weights[min_idx]:.4f})")
+    print(f"\n🔥 Maximum Impact: {component_names[max_idx]} (Weight: {weights[max_idx]:.4f})")
+    print(f"💡 Minimum Impact: {component_names[min_idx]} (Weight: {weights[min_idx]:.4f})")
     
-    # 场景续航排序
-    print(f"\n⏱️ 续航时间排序（从长到短）：")
-    sorted_time_indices = np.argsort(discharge_times)[::-1]
-    for rank, idx in enumerate(sorted_time_indices, 1):
-        print(f"  {rank}. {scenario_names[idx]}: {discharge_times[idx]:.2f}小时")
+    # Total energy across scenarios
+    print(f"\n⚡ Total Energy by Scenario:")
+    for i, name in enumerate(scenario_names):
+        total = np.sum(data_matrix[i])
+        print(f"  {name}: {total:.3f} W")
     
     print("\n" + "="*70)
-    print("分析完成！生成的文件:")
-    print("  1. entropy_weights.png - 熵权法权重柱状图")
-    print("  2. component_impact_heatmap.png - 组件影响热力图")
-    print("  3. power_vs_discharge_comparison.png - 功耗与续航对比图")
+    print("Analysis Complete! Generated file:")
+    print("  entropy_weights.png - Entropy Weight Donut Chart")
     print("="*70)
