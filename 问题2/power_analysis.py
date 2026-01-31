@@ -139,21 +139,57 @@ def plot_nested_donut(results):
             counterclock=False
         )
         
-        # Add scenario label
+        # Add percentage labels on each segment
+        # Calculate angles for each segment
+        total_val = sum(values)
+        cumsum = 0
+        for j, (wedge, val) in enumerate(zip(wedges, values)):
+            if val / total_val < 0.03:  # Skip very small segments (<3%)
+                cumsum += val
+                continue
+            
+            # Calculate midpoint angle of wedge
+            pct = val / total_val
+            mid_angle = 90 - (cumsum + val / 2) / total_val * 360  # degrees
+            mid_rad = np.radians(mid_angle)
+            
+            # Position at middle of ring
+            r = inner_radius + width / 2
+            x_pct = r * np.cos(mid_rad)
+            y_pct = r * np.sin(mid_rad)
+            
+            # Add percentage text
+            ax.text(x_pct, y_pct, f'{pct*100:.0f}%',
+                   ha='center', va='center',
+                   fontsize=10, fontweight='bold', color='white',
+                   bbox=dict(boxstyle='round,pad=0.15', facecolor='black', alpha=0.5))
+            
+            cumsum += val
+        
+        # Add scenario label - moved to LEFT side with connection line
         label_radius = inner_radius + width / 2
-        label_angle = 135
-        x = label_radius * np.cos(np.radians(label_angle))
-        y = label_radius * np.sin(np.radians(label_angle))
+        
+        # Position labels on the left side, stacked vertically
+        x_label = -1.15  # Fixed x position on left
+        y_label = 0.4 - i * 0.18  # Stack vertically
+        
+        # Connection point on the ring (left side)
+        x_ring = -label_radius * 0.95
+        y_ring = label_radius * 0.3
+        
+        # Draw connection line
+        ax.plot([x_label + 0.12, x_ring], [y_label, y_ring], 
+                color='#2C3E50', linewidth=1, linestyle='-', alpha=0.6)
         
         ax.annotate(
-            f'{scenario_name}\n{total:.2f} Wh',
-            xy=(x, y),
-            fontsize=9,
+            f'{scenario_name}: {total:.1f} Wh',
+            xy=(x_label, y_label),
+            fontsize=10,
             fontweight='bold',
-            ha='center',
+            ha='left',
             va='center',
-            color='white',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='#2C3E50', alpha=0.9)
+            color='black',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor=ring_colors[0], alpha=0.3, edgecolor='#2C3E50')
         )
     
     # Center text
