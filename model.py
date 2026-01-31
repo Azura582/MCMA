@@ -4,15 +4,15 @@ from scipy.integrate import solve_ivp
 class SmartphoneBatteryModel:
     def __init__(self):
         # 电池参数
-        self.Q0 = 4735.952          # 标称容量 (mAh)
+        self.Q0 = 3035.952          # 标称容量 (mAh)
         self.V_nom = 3.7          # 标称电压 (V)
         
         # 二阶RC等效电路参数
-        self.R0 = 0.05            # 欧姆内阻 (Ohm) - 瞬态响应
-        self.R1 = 0.03            # 电化学极化内阻 (Ohm)
-        self.C1 = 2000.0          # 电化学极化电容 (F)
-        self.R2 = 0.02            # 浓度极化内阻 (Ohm)
-        self.C2 = 5000.0          # 浓度极化电容 (F)
+        self.R0 = 0.03            # 欧姆内阻 (Ohm) - 瞬态响应
+        self.R1 = 0.008            # 电化学极化内阻 (Ohm)
+        self.C1 = 1000.0          # 电化学极化电容 (F)
+        self.R2 = 0.005            # 浓度极化内阻 (Ohm)
+        self.C2 = 2000.0          # 浓度极化电容 (F)
         
         # 时间常数
         self.tau1 = self.R1 * self.C1  # ~60秒 (电化学极化)
@@ -25,8 +25,8 @@ class SmartphoneBatteryModel:
         self.F = 96485.0          # 法拉第常数
         
         # 热参数
-        self.C_th = 200.0         # 热容 (J/K)
-        self.h = 10.0             # 传热系数 (W/m2K)
+        self.C_th = 600.0         # 热容 (J/K)
+        self.h = 6.0             # 传热系数 (W/m2K)
         self.A = 0.01             # 表面积 (m2)
         
         # 老化参数
@@ -34,7 +34,7 @@ class SmartphoneBatteryModel:
         
         # 组件功耗参数
         self.P_cpu_idle = 0.1     # CPU空闲功耗 (W)
-        self.P_cpu_B=0.5             # CPU系数
+        self.P_cpu_B=0.3             # CPU系数
         self.P_cpu_f=2             # CPU频率
         self.P_cpu_max = 3.0      # CPU最大功耗 (W)
         self.P_net_idle = 0.1     # 网络空闲功耗 (W)
@@ -49,7 +49,7 @@ class SmartphoneBatteryModel:
     def V_oc(self, SOC):
         """开路电压曲线 (OCV-SOC关系)"""
         #SOC_safe = np.clip(SOC, 0.0, 1.0)
-        return 3.39 + 2.65*SOC - 11.11*SOC**2 + 24.973*SOC**3
+        return 3.39 + 1.05*SOC - 0.4*SOC**2 + 0.3*SOC**3
     
     def get_RC_params(self, SOC, T):
         """
@@ -96,7 +96,7 @@ class SmartphoneBatteryModel:
         # CPU功耗
         if 'cpu_usage' in scenario:
             cpu_usage = scenario['cpu_usage']
-            power += self.P_cpu_idle + cpu_usage*self.P_cpu_B*(self.P_cpu_f**3)
+            power += self.P_cpu_idle + cpu_usage*self.P_cpu_B*(self.P_cpu_f**2)
         
         # 网络功耗
         if 'data_rate' in scenario:
