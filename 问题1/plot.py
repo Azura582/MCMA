@@ -122,22 +122,22 @@ def plot_individual_charts(model, data):
     fig3, ax3 = plt.subplots(figsize=(10, 6))
     
     # 左轴：内阻
-    ax3.plot(t_h, data['R0']*1000, color='#E74C3C', linewidth=2.5, label='$R_0$ (欧姆)')
-    ax3.plot(t_h, data['R1']*1000, color='#F39C12', linewidth=2.5, label='$R_1$ (电化学)', linestyle='--')
-    ax3.plot(t_h, data['R2']*1000, color='#9B59B6', linewidth=2.5, label='$R_2$ (浓度)', linestyle='--')
+    ax3.plot(t_h, data['R0']*1000, color='#E74C3C', linewidth=2.5, label='$R_0$ (Ohm)')
+    ax3.plot(t_h, data['R1']*1000, color='#F39C12', linewidth=2.5, label='$R_1$ (Electrochemistry)', linestyle='--')
+    ax3.plot(t_h, data['R2']*1000, color='#9B59B6', linewidth=2.5, label='$R_2$ (Concentration)', linestyle='--')
     ax3.axvline(t_empty, color='red', linestyle='--', alpha=0.6, linewidth=2)
-    ax3.set_xlabel('时间 (h)', fontweight='bold', fontsize=13)
-    ax3.set_ylabel('内阻 (mΩ)', fontweight='bold', fontsize=13, color="#110F0F")
+    ax3.set_xlabel('Time(h)', fontweight='bold', fontsize=13)
+    ax3.set_ylabel('Resistence(mΩ)', fontweight='bold', fontsize=13, color="#110F0F")
     ax3.tick_params(axis='y', labelcolor="#131111")
-    ax3.set_title('④ 内阻与温度变化', fontsize=15, fontweight='bold', pad=15)
+    ax3.set_title('Internal resistance and temperature variation', fontsize=15, fontweight='bold', pad=15)
     ax3.grid(True, alpha=0.3, linestyle='--')
     ax3.set_xlim([0, t_empty*1.05])
     
     # 右轴：温度
     ax3_temp = ax3.twinx()
-    ax3_temp.plot(t_h, data['T_celsius'], color="#3B857C", linewidth=2.5, label='电池温度')
-    ax3_temp.axhline(25, color='green', linestyle=':', linewidth=2, alpha=0.6, label='环境温度')
-    ax3_temp.set_ylabel('温度 (°C)', fontweight='bold', fontsize=13, color="#833E85")
+    ax3_temp.plot(t_h, data['T_celsius'], color="#3B857C", linewidth=2.5, label='Battery temperature')
+    ax3_temp.axhline(25, color='green', linestyle=':', linewidth=2, alpha=0.6, label='Environment temperature')
+    ax3_temp.set_ylabel('Temperature(°C)', fontweight='bold', fontsize=13, color="#833E85")
     ax3_temp.tick_params(axis='y', labelcolor="#852F9D")
     
     # 合并图例

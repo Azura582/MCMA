@@ -1,172 +1,199 @@
+"""
+Power Consumption Analysis for 5 Scenarios
+Nested Donut Chart (Ring Chart) Visualization
+Each ring represents one scenario with different radii
+"""
 import numpy as np
 import matplotlib.pyplot as plt
-from model import SmartphoneBatteryModel
-from scenery import *
 import sys
 from pathlib import Path
-project_root = Path(__file__).resolve().parents[1]  # 父目录的上级是 MCMA
+
+project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root))
-plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'KaiTi', 'SimSun']
+from model import SmartphoneBatteryModel
+from scenery import (scenario_video_streaming, scenario_gaming, 
+                     scenario_navigation, scenario_free, scenario_cold_weather)
+
+# English fonts
+plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['axes.unicode_minus'] = False
 
-class PowerComponentAnalyzer:
-    """功耗组件分析器"""
+
+def calculate_power_breakdown(model, scenario_func, duration_h=1.0):
+    """
+    Calculate power consumption breakdown for each component
+    Returns: dict with power in Wh for each component
+    """
+    scenario = scenario_func(0)
     
-    def __init__(self):
-        self.battery = SmartphoneBatteryModel()
-        
-    def analyze_power_components(self, scenario_func, scenario_name):
-        """
-        分析单个场景下各组件的功耗
-        
-        返回:
-            dict: {'屏幕': power, 'CPU': power, '网络': power, 'GPS': power, '基础': power}
-        """
-        # 获取场景参数（t=0时刻）
-        scenario = scenario_func(0)
-        
-        components = {
-            '屏幕': 0.0,
-            'CPU': 0.0,
-            '网络': 0.0,
-            'GPS': 0.0,
-            '基础': self.battery.P_base
-        }
-        
-        # 屏幕功耗
-        if scenario.get('screen_on', False):
-            brightness = float(np.clip(scenario.get('brightness', 0.5), 0.0, 1.0))
-            components['屏幕'] = self.battery.P_a * brightness * self.battery.P_refresh * self.battery.P_screen_square
-        
-        # CPU功耗
-        if 'cpu_usage' in scenario:
-            cpu_usage = float(np.clip(scenario.get('cpu_usage', 0.0), 0.0, 1.0))
-            cpu_power = self.battery.P_cpu_idle + cpu_usage * self.battery.P_cpu_B * (self.battery.P_cpu_f ** 3)
-            components['CPU'] = cpu_power
-        
-        # 网络功耗
-        if 'data_rate' in scenario:
-            data_rate = max(0.0, float(scenario.get('data_rate', 0.0)))
-            net_power = self.battery.P_net_idle + self.battery.beta * data_rate
-            components['网络'] = net_power
-        
-        # GPS功耗
-        if scenario.get('gps_on', False):
-            components['GPS'] = self.battery.P_gps
-        
-        # 计算总功耗
-        total_power = sum(components.values())
-        
-        return components, total_power
+    power = {
+        'Screen': 0.0,
+        'CPU': 0.0,
+        'Network': 0.0,
+        'GPS': 0.0,
+        'Base': model.P_base * duration_h
+    }
     
-    def analyze_all_scenarios(self):
-        """分析所有场景的功耗组件"""
-        scenarios = {
-            '视频流': scenario_video_streaming,
-            '游戏': scenario_gaming,
-            '导航': scenario_navigation,
-            '低温视频流': scenario_cold_weather,
-            '空闲': scenario_free
-        }
-        
-        results = {}
-        
-        print("="*70)
-        print("各场景功耗组件分析 (满电状态)")
-        print("="*70)
-        
-        for name, func in scenarios.items():
-            components, total = self.analyze_power_components(func, name)
-            results[name] = components
-            
-            print(f"\n【{name}】")
-            print(f"  总功耗: {total:.3f} W")
-            for comp, power in components.items():
-                percentage = (power / total * 100) if total > 0 else 0
-                print(f"  - {comp}: {power:.3f} W ({percentage:.1f}%)")
-        
-        print("\n" + "="*70)
-        
-        return results
+    # Screen power
+    if scenario.get('screen_on', False):
+        brightness = scenario.get('brightness', 0.5)
+        P_screen = model.P_a * brightness * model.P_refresh * model.P_screen_square
+        power['Screen'] = P_screen * duration_h
+    
+    # CPU power
+    cpu_usage = scenario.get('cpu_usage', 0.0)
+    P_cpu = model.P_cpu_idle + cpu_usage * model.P_cpu_B * (model.P_cpu_f ** 2)
+    power['CPU'] = P_cpu * duration_h
+    
+    # Network power
+    data_rate = scenario.get('data_rate', 0.0)
+    P_net = model.P_net_idle + model.beta * data_rate
+    power['Network'] = P_net * duration_h
+    
+    # GPS power
+    if scenario.get('gps_on', False):
+        power['GPS'] = model.P_gps * duration_h
+    
+    return power
 
 
-def plot_radar_chart(results):
-    """
-    绘制科技感雷达图
+def analyze_all_scenarios():
+    """Analyze power breakdown for all 5 scenarios"""
+    model = SmartphoneBatteryModel()
     
-    参数:
-        results: dict, {场景名: {组件: 功耗}}
-    """
-    print("\n生成科技感雷达图...")
+    scenarios = {
+        'Video Streaming': scenario_video_streaming,
+        'Gaming': scenario_gaming,
+        'Navigation': scenario_navigation,
+        'Idle': scenario_free,
+        'Cold Weather': scenario_cold_weather
+    }
     
-    # 组件列表（雷达图的各个轴）
-    components = ['屏幕', 'CPU', '网络', 'GPS', '基础']
-    num_components = len(components)
+    duration_h = 12.0
+    results = {}
     
-    # 场景列表
-    scenarios = list(results.keys())
-    
-    # 计算角度
-    angles = np.linspace(0, 2 * np.pi, num_components, endpoint=False).tolist()
-    angles += angles[:1]  # 闭合图形
-    
-    # 创建图形（使用深色背景增加科技感）
-    fig = plt.figure(figsize=(14, 10), facecolor='#0a0e27')
-    ax = fig.add_subplot(111, projection='polar', facecolor='#0a0e27')
-    
-    # 定义渐变色系（科技感配色）
-    colors = ['#00D9FF', '#FF00E6', '#00FF94', '#FFD700', '#FF6B6B']
-    
-    # 为每个场景绘制雷达图
-    for idx, scenario in enumerate(scenarios):
-        values = [results[scenario][comp] for comp in components]
-        values += values[:1]  # 闭合图形
+    for name, func in scenarios.items():
+        power = calculate_power_breakdown(model, func, duration_h)
+        results[name] = power
         
-        # 绘制填充区域
-        ax.plot(angles, values, 'o-', linewidth=2.5, 
-                label=scenario, color=colors[idx], markersize=8)
-        ax.fill(angles, values, alpha=0.15, color=colors[idx])
+        total = sum(power.values())
+        print(f"\n{name}:")
+        print(f"  Screen:  {power['Screen']:.4f} Wh ({power['Screen']/total*100:.1f}%)" if total > 0 else "  Screen:  0 Wh")
+        print(f"  CPU:     {power['CPU']:.4f} Wh ({power['CPU']/total*100:.1f}%)" if total > 0 else "  CPU:     0 Wh")
+        print(f"  Network: {power['Network']:.4f} Wh ({power['Network']/total*100:.1f}%)" if total > 0 else "  Network: 0 Wh")
+        print(f"  GPS:     {power['GPS']:.4f} Wh ({power['GPS']/total*100:.1f}%)" if total > 0 else "  GPS:     0 Wh")
+        print(f"  Base:    {power['Base']:.4f} Wh ({power['Base']/total*100:.1f}%)" if total > 0 else "  Base:    0 Wh")
+        print(f"  TOTAL:   {total:.4f} Wh")
     
-    # 设置雷达图的标签
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(components, fontsize=13, fontweight='bold', color='white')
+    return results
+
+
+def plot_nested_donut(results):
+    """
+    Create nested donut chart with 5 rings (one per scenario)
+    Each ring at different radius
+    """
+    fig, ax = plt.subplots(figsize=(14, 10))
     
-    # 设置网格样式（科技感）
-    ax.grid(True, color='#1a2332', linewidth=1.5, linestyle='-', alpha=0.7)
-    ax.spines['polar'].set_color('#00D9FF')
-    ax.spines['polar'].set_linewidth(2)
+    # Component colors
+    colors = {
+        'Screen': '#E74C3C',
+        'CPU': '#3498DB',
+        'Network': '#2ECC71',
+        'GPS': '#F39C12',
+        'Base': '#9B59B6'
+    }
     
-    # 设置刻度颜色
-    ax.tick_params(colors='white', labelsize=11)
+    components = ['Screen', 'CPU', 'Network', 'GPS', 'Base']
     
-    # 设置径向刻度
-    max_power = max([max([results[s][c] for c in components]) for s in scenarios])
-    ax.set_ylim(0, max_power * 1.2)
-    ax.set_yticks(np.linspace(0, max_power * 1.2, 5))
-    ax.set_yticklabels([f'{v:.2f}W' for v in np.linspace(0, max_power * 1.2, 5)], 
-                       fontsize=10, color='#00D9FF', fontweight='bold')
+    # Scenario order (inside to outside) - sorted by total power
+    scenario_totals = {name: sum(power.values()) for name, power in results.items()}
+    scenario_order = sorted(scenario_totals.keys(), key=lambda x: scenario_totals[x])
     
-    # 添加标题（科技感字体）
-    ax.set_title('各场景功耗组件雷达分析图\nPower Component Radar Analysis', 
-                 fontsize=18, fontweight='bold', color='white', pad=30,
-                 bbox=dict(boxstyle='round,pad=0.8', facecolor='#1a2332', 
-                          edgecolor='#00D9FF', linewidth=2))
+    # Ring parameters
+    width = 0.12
+    start_radius = 0.25
+    gap = 0.14
     
-    # 添加图例（优化位置和样式）
-    legend = ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), 
-                      fontsize=12, frameon=True, shadow=False, 
-                      facecolor='#1a2332', edgecolor='#00D9FF', 
-                      framealpha=0.9, labelcolor='white')
-    legend.get_frame().set_linewidth(2)
+    # Create each ring
+    for i, scenario_name in enumerate(scenario_order):
+        power_data = results[scenario_name]
+        inner_radius = start_radius + i * gap
+        
+        values = [power_data[comp] for comp in components]
+        ring_colors = [colors[comp] for comp in components]
+        
+        total = sum(values)
+        if total == 0:
+            # For zero total, show equal segments in gray
+            values = [1, 1, 1, 1, 1]
+            ring_colors = ['#CCCCCC'] * 5
+        
+        # Create pie as donut ring - BLACK edge
+        wedges, _ = ax.pie(
+            values,
+            radius=inner_radius + width,
+            colors=ring_colors,
+            wedgeprops=dict(width=width, edgecolor='black', linewidth=1.2),
+            startangle=90,
+            counterclock=False
+        )
+        
+        # Add scenario label
+        label_radius = inner_radius + width / 2
+        label_angle = 135
+        x = label_radius * np.cos(np.radians(label_angle))
+        y = label_radius * np.sin(np.radians(label_angle))
+        
+        ax.annotate(
+            f'{scenario_name}\n{total:.2f} Wh',
+            xy=(x, y),
+            fontsize=9,
+            fontweight='bold',
+            ha='center',
+            va='center',
+            color='white',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='#2C3E50', alpha=0.9)
+        )
     
-    # 添加水印/标注
-    fig.text(0.5, 0.02, 'Smartphone Battery Model - Power Analysis System', 
-            ha='center', fontsize=10, color='#00D9FF', alpha=0.7, 
-            style='italic', fontweight='bold')
+    # Center text
+    ax.text(0, 0, 'Power\nConsumption\n', 
+            ha='center', va='center', fontsize=13, fontweight='bold',
+            bbox=dict(boxstyle='circle,pad=0.5', facecolor='#ECF0F1', edgecolor='#2C3E50', linewidth=2))
+    
+    # Legend - closer to chart
+    legend_elements = [plt.Rectangle((0,0), 1, 1, facecolor=colors[comp], 
+                                       edgecolor='black', linewidth=1.2, label=comp) 
+                       for comp in components]
+    ax.legend(handles=legend_elements, loc='upper right', 
+              fontsize=12, title='Components', title_fontsize=13,
+              bbox_to_anchor=(1.05, 0.95), frameon=True, 
+              facecolor='white', edgecolor='#2C3E50')
+    
+    # Title
+    #ax.set_title('Power Consumption',
+    #            fontsize=16, fontweight='bold', pad=25)
+    
+    ax.set_aspect('equal')
+    ax.axis('off')
     
     plt.tight_layout()
-    plt.savefig('power_radar_chart.png', dpi=300, bbox_inches='tight', 
-                facecolor='#0a0e27', edgecolor='none')
-    print("科技感雷达图已保存为 power_radar_chart.png")
-    plt.show()
+    plt.savefig('power_radar_chart.png', dpi=400, bbox_inches='tight', 
+                facecolor='white', edgecolor='none')
+    print("\n✓ Figure saved: power_radar_chart.png")
+    plt.close()
 
+
+if __name__ == '__main__':
+    print("="*60)
+    print("POWER CONSUMPTION ANALYSIS - 5 SCENARIOS")
+    print("Components: Screen, CPU, Network, GPS, Base")
+    print("Duration: 12 hour")
+    print("="*60)
+    
+    results = analyze_all_scenarios()
+    plot_nested_donut(results)
+    
+    print("\n" + "="*60)
+    print("Analysis complete!")
+    print("="*60)
