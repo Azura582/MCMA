@@ -138,7 +138,7 @@ def plot_results(times_aging, times_temp, times_R0,
              'o-', color='#E74C3C', markersize=2, linewidth=0.5, alpha=0.7)
     ax1.set_xlabel('Aging Rate ($\\times 10^{-6}$ h$^{-1}$)', fontsize=12, fontweight='bold')
     ax1.set_ylabel('Discharge Time (h)', fontsize=12, fontweight='bold')
-    ax1.set_title('Effect of Aging Rate\n(500 Simulations)', fontsize=13, fontweight='bold')
+    ax1.set_title('Effect of Aging Rate', fontsize=13, fontweight='bold')
     ax1.grid(True, alpha=0.3, linestyle='--')
     
     mean_aging = np.nanmean(times_aging)
@@ -152,7 +152,7 @@ def plot_results(times_aging, times_temp, times_R0,
              'o-', color='#3498DB', markersize=2, linewidth=0.5, alpha=0.7)
     ax2.set_xlabel('Ambient Temperature (°C)', fontsize=12, fontweight='bold')
     ax2.set_ylabel('Discharge Time (h)', fontsize=12, fontweight='bold')
-    ax2.set_title('Effect of Temperature\n(500 Simulations)', fontsize=13, fontweight='bold')
+    ax2.set_title('Effect of Temperature', fontsize=13, fontweight='bold')
     ax2.grid(True, alpha=0.3, linestyle='--')
     
     mean_temp = np.nanmean(times_temp)
@@ -165,15 +165,15 @@ def plot_results(times_aging, times_temp, times_R0,
              'o-', color='#27AE60', markersize=2, linewidth=0.5, alpha=0.7)
     ax3.set_xlabel('Ohmic Resistance R$_0$ (mΩ)', fontsize=12, fontweight='bold')
     ax3.set_ylabel('Discharge Time (h)', fontsize=12, fontweight='bold')
-    ax3.set_title('Effect of Resistance\n(500 Simulations)', fontsize=13, fontweight='bold')
+    ax3.set_title('Effect of Resistance', fontsize=13, fontweight='bold')
     ax3.grid(True, alpha=0.3, linestyle='--')
     
     mean_R0 = np.nanmean(times_R0)
     ax3.axhline(mean_R0, color='green', linestyle='--', linewidth=2, label=f'Mean: {mean_R0:.1f}h')
     ax3.legend(loc='best', fontsize=10)
     
-    plt.suptitle('Monte Carlo Simulation: Battery Discharge Time Under Uncertainty\n(Idle Mode, Full Charge)', 
-                 fontsize=14, fontweight='bold', y=1.02)
+    #plt.suptitle('Monte Carlo Simulation: Battery Discharge Time Under Uncertainty', 
+    #             fontsize=14, fontweight='bold', y=1.02)
     
     plt.tight_layout()
     plt.savefig('monte_carlo_distribution.png', dpi=400, bbox_inches='tight')

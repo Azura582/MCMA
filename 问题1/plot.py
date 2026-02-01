@@ -129,7 +129,7 @@ def plot_individual_charts(model, data):
     ax3.set_xlabel('Time(h)', fontweight='bold', fontsize=13)
     ax3.set_ylabel('Resistence(mΩ)', fontweight='bold', fontsize=13, color="#110F0F")
     ax3.tick_params(axis='y', labelcolor="#131111")
-    ax3.set_title('Internal resistance and temperature variation', fontsize=15, fontweight='bold', pad=15)
+    #ax3.set_title('Internal resistance and temperature variation', fontsize=15, fontweight='bold', pad=15)
     ax3.grid(True, alpha=0.3, linestyle='--')
     ax3.set_xlim([0, t_empty*1.05])
     
