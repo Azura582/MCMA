@@ -106,7 +106,7 @@ ax.plot(x_axis, model_sorted, linewidth=0.8, color='#E63946',
 
 # Add shaded error region
 ax.fill_between(x_axis, model_sorted - rmse, model_sorted + rmse, 
-                alpha=0.15, color='gray', label=f'±RMSE ({rmse:.2f}h)', zorder=0)
+                alpha=0.15, color="#9C2933", label=f'±RMSE', zorder=0)
 
 # Add horizontal reference lines
 ax.axhline(y=10, color='#2A9D8F', linestyle='--', linewidth=1.5, 
