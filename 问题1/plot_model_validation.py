@@ -138,8 +138,8 @@ textstr += f'R² = {r_squared:.4f}\n'
 textstr += f'Correlation = {correlation:.4f}'
 
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.8, edgecolor='#2C3E50', linewidth=1.5)
-ax.text(0.98, 0.20, textstr, transform=ax.transAxes, fontsize=10,
-        verticalalignment='top', horizontalalignment='right', bbox=props, family='monospace')
+#ax.text(0.98, 0.20, textstr, transform=ax.transAxes, fontsize=10,
+        #verticalalignment='top', horizontalalignment='right', bbox=props, family='monospace')
 
 # Set y-axis limits
 ax.set_ylim(-1, 32)
