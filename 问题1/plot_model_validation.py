@@ -101,7 +101,7 @@ ax.plot(x_axis, real_sorted, linewidth=0.8, color='#2E86AB',
         label='Real Measurements', alpha=0.85, zorder=1)
 
 # Model predictions (red) - put on top
-ax.plot(x_axis, model_sorted, linewidth=0.8, color='#E63946', 
+ax.plot(x_axis, model_sorted, linewidth=1.2, color='#E63946', 
         label='Model Predictions', alpha=0.85, zorder=2)
 
 # Add shaded error region
@@ -153,59 +153,6 @@ plt.tight_layout()
 plt.savefig('model_validation_10k_phones.png', dpi=300, bbox_inches='tight', 
             facecolor='white', edgecolor='none')
 print("\n✓ Figure saved: model_validation_10k_phones.png")
-
-# Create a second plot: Scatter plot with density
-fig2, ax2 = plt.subplots(figsize=(10, 10))
-
-# Sample points for scatter (too many points will be slow)
-sample_size = 2000
-sample_indices = np.random.choice(n_phones, sample_size, replace=False)
-real_sample = real_sorted[sample_indices]
-model_sample = model_sorted[sample_indices]
-
-# Hexbin plot for density
-hexbin = ax2.hexbin(model_sample, real_sample, gridsize=50, cmap='YlOrRd', 
-                    mincnt=1, edgecolors='black', linewidths=0.2, alpha=0.8)
-
-# Add perfect prediction line
-max_val = max(np.max(real_sorted), np.max(model_sorted))
-ax2.plot([0, max_val], [0, max_val], 'k--', linewidth=2, 
-        label='Perfect Prediction (y=x)', alpha=0.7)
-
-# Add regression line
-z = np.polyfit(model_sorted, real_sorted, 1)
-p = np.poly1d(z)
-ax2.plot(model_sorted, p(model_sorted), 'b-', linewidth=2, 
-        label=f'Linear Fit (y={z[0]:.3f}x+{z[1]:.3f})', alpha=0.7)
-
-# Styling
-ax2.set_xlabel('Model Prediction (hours)', fontsize=12, fontweight='bold')
-ax2.set_ylabel('Real Measurement (hours)', fontsize=12, fontweight='bold')
-#ax2.set_title('Correlation: Model Prediction vs Real Measurement ',
-   #          fontsize=14, fontweight='bold', pad=20)
-ax2.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
-ax2.set_aspect('equal', adjustable='box')
-ax2.legend(loc='upper left', fontsize=11, frameon=True, 
-          facecolor='white', edgecolor='#2C3E50')
-
-# Add colorbar
-cbar = plt.colorbar(hexbin, ax=ax2)
-cbar.set_label('Number of Phones', fontsize=11, fontweight='bold')
-
-# Add statistics
-textstr2 = f'R² = {r_squared:.4f}\nCorr = {correlation:.4f}\nRMSE = {rmse:.3f}h'
-props2 = dict(boxstyle='round', facecolor='lightblue', alpha=0.8, 
-             edgecolor='#2C3E50', linewidth=1.5)
-ax2.text(0.98, 0.05, textstr2, transform=ax2.transAxes, fontsize=11,
-        verticalalignment='bottom', horizontalalignment='right', 
-        bbox=props2, family='monospace')
-
-plt.tight_layout()
-plt.savefig('model_validation_scatter.png', dpi=300, bbox_inches='tight', 
-            facecolor='white', edgecolor='none')
-print("✓ Figure saved: model_validation_scatter.png")
-
-plt.close('all')
 
 print("\n" + "="*70)
 print("Analysis complete! Generated 2 figures:")
