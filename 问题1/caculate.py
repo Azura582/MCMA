@@ -153,7 +153,7 @@ def plot_heatmap(soc_values, results_matrix):
     ax.set_yticklabels(scenarios, fontsize=12)
     ax.set_xlabel('Initial SOC(%)', fontsize=13, fontweight='bold')
     ax.set_ylabel('Use cases', fontsize=13, fontweight='bold')
-    ax.set_title('Discharge Time Heatmap', fontsize=16, fontweight='bold', pad=20)
+    #ax.set_title('Discharge Time Heatmap', fontsize=16, fontweight='bold', pad=20)
     
     # 添加数值标注
     for i in range(len(scenarios)):
