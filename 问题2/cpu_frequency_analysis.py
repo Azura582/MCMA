@@ -290,9 +290,9 @@ def create_visualizations(df, baseline_power, baseline_freq):
               labelspacing=0.6)
     
     # 设置标题
-    ax1.set_title('CPU Frequency Impact on Power Consumption and Battery Life\n' + 
-                 f'Baseline: {baseline_freq} GHz, {baseline_power_ratio:.2f}x Power, {baseline_discharge_time:.2f}h Battery Life',
-                 fontsize=16, fontweight='bold', pad=25)
+    #ax1.set_title('CPU Frequency Impact on Power Consumption and Battery Life\n' + 
+    #             f'Baseline: {baseline_freq} GHz, {baseline_power_ratio:.2f}x Power, {baseline_discharge_time:.2f}h Battery Life',
+     #            fontsize=16, fontweight='bold', pad=25)
     
     # 设置X轴刻度
     ax1.set_xticks(df['CPU_Frequency'])
