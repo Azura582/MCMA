@@ -19,7 +19,7 @@ from scenery import scenario_video_streaming
 
 # 设置科研美赛风格
 sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.4)
+sns.set_context("paper", font_scale=1.6)  # 增大基础字体比例
 sns.set_palette("husl")
 
 # 设置字体为Times New Roman（英文）+ SimHei（中文）
@@ -199,8 +199,8 @@ def create_visualizations(df, baseline_power, baseline_freq):
     baseline_line_color = '#404040'  # 更深的灰色 - 基准线
     
     # 第一个Y轴 - 功耗倍数 (深红色系)
-    ax1.set_xlabel('CPU Frequency (GHz)', fontsize=14, fontweight='bold', labelpad=12)
-    ax1.set_ylabel('Power Consumption Ratio', fontsize=14, fontweight='bold', 
+    ax1.set_xlabel('CPU Frequency (GHz)', fontsize=16, fontweight='bold', labelpad=12)  # 增大到16
+    ax1.set_ylabel('Power Consumption Ratio', fontsize=16, fontweight='bold',  # 增大到16
                    labelpad=12, color=color1)
     
     # 绘制功耗倍数曲线
@@ -222,20 +222,20 @@ def create_visualizations(df, baseline_power, baseline_freq):
         y_offset = 0.12 if row['CPU_Frequency'] != baseline_freq else 0.18
         ax1.text(row['CPU_Frequency'], row['Power_Ratio'] + y_offset, 
                 f"{row['Power_Ratio']:.2f}x",
-                ha='center', va='bottom', fontsize=10, fontweight='bold',
+                ha='center', va='bottom', fontsize=12, fontweight='bold',  # 增大到12
                 color='white', 
                 bbox=dict(boxstyle='round,pad=0.4', 
                          facecolor=color1, alpha=0.9, 
                          edgecolor='black', linewidth=1.8))
     
-    ax1.tick_params(axis='y', labelcolor=color1, labelsize=11)
-    ax1.tick_params(axis='x', labelsize=11)
+    ax1.tick_params(axis='y', labelcolor=color1, labelsize=13)  # 增大到13
+    ax1.tick_params(axis='x', labelsize=13)  # 增大到13
     ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.8)
     ax1.set_axisbelow(True)
     
     # 第二个Y轴 - 放电时间 (绿色系)
     ax2 = ax1.twinx()
-    ax2.set_ylabel('Discharge Time (hours)', fontsize=14, fontweight='bold', 
+    ax2.set_ylabel('Discharge Time (hours)', fontsize=16, fontweight='bold',  # 增大到16
                    labelpad=12, color=color2)
     
     # 绘制放电时间曲线
@@ -253,13 +253,13 @@ def create_visualizations(df, baseline_power, baseline_freq):
         y_offset = 0.18 if row['CPU_Frequency'] != baseline_freq else 0.28
         ax2.text(row['CPU_Frequency'], row['Discharge_Time'] + y_offset, 
                 f"{row['Discharge_Time']:.2f}h",
-                ha='center', va='bottom', fontsize=10, fontweight='bold',
+                ha='center', va='bottom', fontsize=12, fontweight='bold',  # 增大到12
                 color='white', 
                 bbox=dict(boxstyle='round,pad=0.4', 
                          facecolor=color2, alpha=0.9, 
                          edgecolor='black', linewidth=1.8))
     
-    ax2.tick_params(axis='y', labelcolor=color2, labelsize=11)
+    ax2.tick_params(axis='y', labelcolor=color2, labelsize=13)  # 增大到13
     
     # 标注基准交叉点 - 使用Y1轴的坐标，确保在正确位置
     ax1.scatter([baseline_freq], [baseline_power_ratio], 
@@ -281,7 +281,7 @@ def create_visualizations(df, baseline_power, baseline_freq):
               loc='upper right',  # 改到右上角
               frameon=True, 
               shadow=True, 
-              fontsize=10.5,
+              fontsize=12,  # 增大到12
               framealpha=0.98,
               edgecolor='black',
               fancybox=True,

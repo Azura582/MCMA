@@ -10,7 +10,7 @@ from scipy import stats
 # Set scientific style
 plt.rcParams['font.family'] = 'DejaVu Sans'
 plt.rcParams['axes.unicode_minus'] = False
-plt.rcParams['font.size'] = 10
+plt.rcParams['font.size'] = 14  # 增大基础字体大小
 
 # Load CSV data
 csv_path = 'discharge_time_prediction.csv'
@@ -116,8 +116,8 @@ ax.axhline(y=24, color='#F77F00', linestyle='--', linewidth=1.5,
 
 # Styling
 ax.set_xlabel('Phone Sample Index', 
-             fontsize=12, fontweight='bold')
-ax.set_ylabel('Discharge Time (hours)', fontsize=12, fontweight='bold')
+             fontsize=16, fontweight='bold')  # 增大到14
+ax.set_ylabel('Discharge Time (hours)', fontsize=16, fontweight='bold')  # 增大到14
 #ax.set_title('Model Validation: Real vs Predicted Discharge Time for 10,000 Smartphones',
       #      fontsize=14, fontweight='bold', pad=20)
 
@@ -126,7 +126,7 @@ ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
 ax.set_axisbelow(True)
 
 # Legend
-ax.legend(loc='upper left', fontsize=10, frameon=True, 
+ax.legend(loc='upper left', fontsize=12, frameon=True,  # 增大到12
          facecolor='white', edgecolor='#2C3E50', framealpha=0.95)
 
 # Add statistics text box - moved to upper right
@@ -145,9 +145,10 @@ props = dict(boxstyle='round', facecolor='wheat', alpha=0.8, edgecolor='#2C3E50'
 ax.set_ylim(-1, 32)
 ax.set_xlim(0, n_phones)
 
-# Format x-axis
+# Format x-axis with larger tick labels
 ax.set_xticks([0, 2000, 4000, 6000, 8000, 10000])
-ax.set_xticklabels(['0', '2K', '4K', '6K', '8K', '10K'])
+ax.set_xticklabels(['0', '2K', '4K', '6K', '8K', '10K'], fontsize=12)  # 增大刻度标签
+ax.tick_params(axis='both', which='major', labelsize=12)  # 同时设置两个轴的刻度大小
 
 plt.tight_layout()
 plt.savefig('model_validation_10k_phones.png', dpi=300, bbox_inches='tight', 

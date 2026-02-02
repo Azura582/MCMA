@@ -12,7 +12,7 @@ from matplotlib import rcParams
 
 # 设置科研美赛风格
 sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.4)
+sns.set_context("paper", font_scale=1.6)  # 增大基础字体比例
 sns.set_palette("husl")
 
 # 设置字体为Times New Roman（英文）+ SimHei（中文）
@@ -162,18 +162,22 @@ def create_visualizations(df, baseline_power):
                 square=False,
                 vmin=1.5,
                 vmax=6.5,
-                annot_kws={'fontsize': 10, 'fontweight': 'bold'},
+                annot_kws={'fontsize': 13, 'fontweight': 'bold'},  # 增大热力图数字到13
                 ax=ax)
     
     # 设置标题和标签
     #ax.set_title('Screen Power Consumption Ratio Heatmap\n(Baseline: 60Hz, 30% Brightness)', 
      #            fontsize=16, fontweight='bold', pad=20)
-    ax.set_xlabel('Refresh Rate (Hz)', fontsize=13, fontweight='bold', labelpad=10)
-    ax.set_ylabel('Brightness Level (%)', fontsize=13, fontweight='bold', labelpad=10)
+    ax.set_xlabel('Refresh Rate (Hz)', fontsize=15, fontweight='bold', labelpad=10)  # 增大到15
+    ax.set_ylabel('Brightness Level (%)', fontsize=15, fontweight='bold', labelpad=10)  # 增大到15
     
     # 调整colorbar
     cbar = ax.collections[0].colorbar
-    cbar.ax.tick_params(labelsize=11)
+    cbar.ax.tick_params(labelsize=13)  # 增大colorbar刻度到13
+    cbar.set_label('Power Ratio (relative to baseline)', fontsize=14, fontweight='bold')  # 增大colorbar标签到14
+    
+    # 调整刻度标签大小
+    ax.tick_params(axis='both', which='major', labelsize=13)  # 增大轴刻度到13
     
     plt.tight_layout()
     filename1 = 'power_ratio_heatmap.png'
@@ -181,151 +185,8 @@ def create_visualizations(df, baseline_power):
     plt.close()
     print(f"  [1/4] 已生成: {filename1}")
     
-    # ====================
-    # 图2: 线图 - 不同亮度下刷新率的影响 (Seaborn风格)
-    # ====================
-    fig, ax = plt.subplots(figsize=(12, 7), dpi=300)
+   
     
-    # 使用seaborn的色板
-    palette = sns.color_palette("rocket_r", n_colors=len(df['Brightness'].unique()))
-    
-    for i, brightness in enumerate(sorted(df['Brightness'].unique())):
-        subset = df[df['Brightness'] == brightness].sort_values('Refresh_Rate')
-        ax.plot(subset['Refresh_Rate'], 
-                subset['Power_Ratio'],
-                marker='o',
-                linewidth=2.5,
-                markersize=10,
-                label=f'{int(brightness*100)}% Brightness',
-                color=palette[i],
-                alpha=0.85)
-    
-    # 添加基准线
-    ax.axhline(y=1.0, color='#e74c3c', linestyle='--', linewidth=2.5, 
-               label='Baseline (1.0x)', alpha=0.8, zorder=0)
-    
-    # 设置标题和标签
-    ax.set_xlabel('Refresh Rate (Hz)', fontsize=13, fontweight='bold', labelpad=10)
-    ax.set_ylabel('Power Consumption Ratio', fontsize=13, fontweight='bold', labelpad=10)
-    #ax.set_title('Impact of Refresh Rate on Power Consumption\nat Different Brightness Levels\n(Baseline: 60Hz, 30% Brightness)', 
-      #           fontsize=16, fontweight='bold', pad=20)
-    
-    # 设置图例
-    ax.legend(loc='upper left', frameon=True, shadow=True, 
-              fontsize=11, ncol=2, framealpha=0.95)
-    
-    # 设置网格
-    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.8)
-    ax.set_axisbelow(True)
-    
-    # 设置刻度
-    ax.set_xticks([60, 70, 80, 90, 100, 110, 120])
-    
-    plt.tight_layout()
-    filename2 = 'power_ratio_by_refresh.png'
-    plt.savefig(filename2, dpi=300, bbox_inches='tight', facecolor='white')
-    plt.close()
-    print(f"  [2/4] 已生成: {filename2}")
-    
-    # ====================
-    # 图3: 分组柱状图 - 不同刷新率下亮度的影响 (Seaborn风格)
-    # ====================
-    fig, ax = plt.subplots(figsize=(14, 7), dpi=300)
-    
-    # 准备数据
-    plot_df = df.copy()
-    plot_df['Brightness_Label'] = plot_df['Brightness_Percent'].astype(str) + '%'
-    
-    # 使用seaborn的barplot
-    sns.barplot(data=plot_df, 
-                x='Refresh_Rate', 
-                y='Power_Ratio',
-                hue='Brightness_Label',
-                palette='mako_r',
-                ax=ax,
-                edgecolor='black',
-                linewidth=1.2,
-                alpha=0.85)
-    
-    # 添加基准线
-    ax.axhline(y=1.0, color='#e74c3c', linestyle='--', linewidth=2.5, 
-               label='Baseline (1.0x)', alpha=0.8, zorder=0)
-    
-    # 设置标题和标签
-    ax.set_xlabel('Refresh Rate (Hz)', fontsize=13, fontweight='bold', labelpad=10)
-    ax.set_ylabel('Power Consumption Ratio', fontsize=13, fontweight='bold', labelpad=10)
-    #ax.set_title('Power Consumption Ratio by Refresh Rate and Brightness\n(Baseline: 60Hz, 30% Brightness)', 
-     #            fontsize=16, fontweight='bold', pad=20)
-    
-    # 设置图例
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles, labels, 
-              title='Brightness', 
-              loc='upper left', 
-              frameon=True, 
-              shadow=True,
-              fontsize=11,
-              title_fontsize=12,
-              ncol=3,
-              framealpha=0.95)
-    
-    # 设置网格
-    ax.grid(True, alpha=0.3, axis='y', linestyle='--', linewidth=0.8)
-    ax.set_axisbelow(True)
-    
-    plt.tight_layout()
-    filename3 = 'power_ratio_bar_chart.png'
-    plt.savefig(filename3, dpi=300, bbox_inches='tight', facecolor='white')
-    plt.close()
-    print(f"  [3/4] 已生成: {filename3}")
-    
-    # ====================
-    # 图4: 雷达图 - 各刷新率平均功耗倍数对比 (新增)
-    # ====================
-    fig, ax = plt.subplots(figsize=(10, 10), dpi=300, subplot_kw=dict(projection='polar'))
-    
-    # 准备数据
-    refresh_groups = df.groupby('Refresh_Rate')['Power_Ratio'].mean().reset_index()
-    categories = [f'{int(r)} Hz' for r in refresh_groups['Refresh_Rate']]
-    values = refresh_groups['Power_Ratio'].tolist()
-    
-    # 闭合雷达图
-    values += values[:1]
-    angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
-    angles += angles[:1]
-    
-    # 绘制雷达图
-    ax.plot(angles, values, 'o-', linewidth=3, color='#3498db', label='Average Power Ratio')
-    ax.fill(angles, values, alpha=0.25, color='#3498db')
-    
-    # 添加基准线
-    baseline_values = [1.0] * len(angles)
-    ax.plot(angles, baseline_values, '--', linewidth=2.5, color='#e74c3c', 
-            label='Baseline (1.0x)', alpha=0.8)
-    
-    # 设置标签
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categories, fontsize=12, fontweight='bold')
-    
-    # 设置标题
-    ##ax.set_title('Average Power Consumption Ratio\nby Refresh Rate\n(Baseline: 60Hz, 30% Brightness)', 
-       #          fontsize=16, fontweight='bold', pad=30, y=1.08)
-    
-    # 设置图例
-    ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1), 
-              frameon=True, shadow=True, fontsize=11, framealpha=0.95)
-    
-    # 设置网格
-    ax.grid(True, linestyle='--', alpha=0.5, linewidth=0.8)
-    
-    # 设置y轴范围
-    ax.set_ylim(0, max(values) * 1.1)
-    
-    plt.tight_layout()
-    filename4 = 'power_radar_chart.png'
-    plt.savefig(filename4, dpi=300, bbox_inches='tight', facecolor='white')
-    plt.close()
-    print(f"  [4/4] 已生成: {filename4}")
 
 
 if __name__ == "__main__":
