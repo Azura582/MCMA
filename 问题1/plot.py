@@ -19,7 +19,7 @@ def simulate_full_video_discharge():
     # 初始条件：满电、常温、零极化
     soc0 = 1.0
     T_init = 298.15  # 25°C
-    y0 = [soc0, T_init, 0.0, 0.0]
+    y0 = [soc0, T_init, 0.025, 0.06]
     
     # 足够长的模拟时间
     t_span = (0, 48 * 3600)
@@ -34,7 +34,7 @@ def simulate_full_video_discharge():
     print("="*70)
     
     # 运行仿真（启用密集输出以便插值）
-    sol = model.simulate(t_span, y0, scenario_video_streaming, max_step=60)
+    sol = model.simulate(t_span, y0, scenario_video_streaming, max_step=1.0)
     
     # 找到放空时间
     t_empty_s = model.find_empty_time(sol)

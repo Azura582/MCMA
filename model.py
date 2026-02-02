@@ -199,13 +199,18 @@ class SmartphoneBatteryModel:
         
         return [dSOC_dt, dT_dt, dU1_dt, dU2_dt]
     
-    def simulate(self, t_span, y0, scenario_func, max_step=60):
+    def simulate(self, t_span, y0, scenario_func, max_step=1.0):
         """模拟电池放电"""
+        t_start,t_end=t_span
+        t_eval=np.arange(t_start,t_end+max_step,max_step)
+        
         sol = solve_ivp(
             lambda t, y: self.model_equations(t, y, scenario_func),
             t_span,
             y0,
             method='RK45',
+            t_eval=t_eval,
+            dense_output=False,
             max_step=max_step,
             rtol=1e-6,
             atol=1e-9
