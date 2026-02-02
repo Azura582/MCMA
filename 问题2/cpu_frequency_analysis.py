@@ -192,90 +192,102 @@ def create_visualizations(df, baseline_power, baseline_freq):
     # 设置Seaborn风格
     sns.set_style("whitegrid")
     
-    # 第一个Y轴 - 功耗倍数 (红色系)
-    color1 = '#d62728'  # Seaborn 红色
+    # 使用深色调专业配色方案（科研美赛标准）
+    color1 = '#d62728'  # 深红色 - 功耗（深色暖色调，代表警示/能耗）
+    color2 = '#1f77b4'  # 深蓝色 - 续航（深色冷色调，代表稳定/持久）
+    baseline_color = '#7f7f7f'  # 深灰色 - 基准点（中性专业色）
+    baseline_line_color = '#404040'  # 更深的灰色 - 基准线
+    
+    # 第一个Y轴 - 功耗倍数 (深红色系)
     ax1.set_xlabel('CPU Frequency (GHz)', fontsize=14, fontweight='bold', labelpad=12)
     ax1.set_ylabel('Power Consumption Ratio', fontsize=14, fontweight='bold', 
                    labelpad=12, color=color1)
     
     # 绘制功耗倍数曲线
     line1 = ax1.plot(df['CPU_Frequency'], df['Power_Ratio'], 
-                     marker='o', linewidth=3.5, markersize=14,
-                     color=color1, alpha=0.85, label='Power Ratio',
-                     markeredgecolor='white', markeredgewidth=2)
+                     marker='o', linewidth=4, markersize=15,
+                     color=color1, alpha=0.9, label='Power Ratio',
+                     markeredgecolor='black', markeredgewidth=2)
     
     # 功耗倍数基准线 (水平线)
-    ax1.axhline(y=baseline_power_ratio, color=color1, linestyle='--', 
-                linewidth=2.5, alpha=0.6, label=f'Baseline Power (1.0x)')
+    ax1.axhline(y=baseline_power_ratio, color=baseline_line_color, linestyle='--', 
+                linewidth=2.8, alpha=0.7, label=f'Baseline Power (1.0x)')
     
     # 功耗倍数基准点 (垂直线)
-    ax1.axvline(x=baseline_freq, color='#7f7f7f', linestyle=':', 
-                linewidth=2.5, alpha=0.5, label=f'Baseline Frequency ({baseline_freq} GHz)')
-    
-    # 标注基准交叉点
-    ax1.scatter([baseline_freq], [baseline_power_ratio], 
-               s=400, color='#2ca02c', marker='*', 
-               edgecolor='black', linewidth=2.5, zorder=10,
-               label='Baseline Point')
+    ax1.axvline(x=baseline_freq, color=baseline_line_color, linestyle=':', 
+                linewidth=2.8, alpha=0.7, label=f'Baseline Frequency ({baseline_freq} GHz)')
     
     # 添加功耗倍数数值标签
     for _, row in df.iterrows():
-        ax1.text(row['CPU_Frequency'], row['Power_Ratio'] + 0.12, 
+        y_offset = 0.12 if row['CPU_Frequency'] != baseline_freq else 0.18
+        ax1.text(row['CPU_Frequency'], row['Power_Ratio'] + y_offset, 
                 f"{row['Power_Ratio']:.2f}x",
-                ha='center', va='bottom', fontsize=9, fontweight='bold',
-                color=color1, bbox=dict(boxstyle='round,pad=0.3', 
-                                       facecolor='white', alpha=0.7, edgecolor=color1))
+                ha='center', va='bottom', fontsize=10, fontweight='bold',
+                color='white', 
+                bbox=dict(boxstyle='round,pad=0.4', 
+                         facecolor=color1, alpha=0.9, 
+                         edgecolor='black', linewidth=1.8))
     
     ax1.tick_params(axis='y', labelcolor=color1, labelsize=11)
     ax1.tick_params(axis='x', labelsize=11)
     ax1.grid(True, alpha=0.3, linestyle='--', linewidth=0.8)
     ax1.set_axisbelow(True)
     
-    # 第二个Y轴 - 放电时间 (蓝色系)
+    # 第二个Y轴 - 放电时间 (绿色系)
     ax2 = ax1.twinx()
-    color2 = '#1f77b4'  # Seaborn 蓝色
     ax2.set_ylabel('Discharge Time (hours)', fontsize=14, fontweight='bold', 
                    labelpad=12, color=color2)
     
     # 绘制放电时间曲线
     line2 = ax2.plot(df['CPU_Frequency'], df['Discharge_Time'], 
-                     marker='s', linewidth=3.5, markersize=14,
-                     color=color2, alpha=0.85, label='Discharge Time',
-                     markeredgecolor='white', markeredgewidth=2)
+                     marker='s', linewidth=4, markersize=15,
+                     color=color2, alpha=0.9, label='Discharge Time',
+                     markeredgecolor='black', markeredgewidth=2)
     
     # 放电时间基准线 (水平线)
-    ax2.axhline(y=baseline_discharge_time, color=color2, linestyle='--', 
-                linewidth=2.5, alpha=0.6, label=f'Baseline Time ({baseline_discharge_time:.2f}h)')
+    ax2.axhline(y=baseline_discharge_time, color=baseline_line_color, linestyle='--', 
+                linewidth=2.8, alpha=0.7, label=f'Baseline Time ({baseline_discharge_time:.2f}h)')
     
     # 添加放电时间数值标签
     for _, row in df.iterrows():
-        ax2.text(row['CPU_Frequency'], row['Discharge_Time'] + 0.15, 
+        y_offset = 0.18 if row['CPU_Frequency'] != baseline_freq else 0.28
+        ax2.text(row['CPU_Frequency'], row['Discharge_Time'] + y_offset, 
                 f"{row['Discharge_Time']:.2f}h",
-                ha='center', va='bottom', fontsize=9, fontweight='bold',
-                color=color2, bbox=dict(boxstyle='round,pad=0.3', 
-                                       facecolor='white', alpha=0.7, edgecolor=color2))
+                ha='center', va='bottom', fontsize=10, fontweight='bold',
+                color='white', 
+                bbox=dict(boxstyle='round,pad=0.4', 
+                         facecolor=color2, alpha=0.9, 
+                         edgecolor='black', linewidth=1.8))
     
     ax2.tick_params(axis='y', labelcolor=color2, labelsize=11)
     
-    # 组合图例 - 优化排列
+    # 标注基准交叉点 - 使用Y1轴的坐标，确保在正确位置
+    ax1.scatter([baseline_freq], [baseline_power_ratio], 
+               s=600, color='gold', marker='*', 
+               edgecolor='black', linewidth=3, zorder=10,
+               label='Baseline Point')
+    
+    # 组合图例 - 移到右上角避免遮挡
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     
-    # 合并图例，按重要性排序
-    all_lines = [lines1[2], lines1[0], lines2[0], lines1[1], lines2[1], lines1[3]]  # 重排顺序
+    # 合并图例，按逻辑顺序排列
+    all_lines = [lines1[2], lines1[0], lines2[0], lines1[1], lines2[1], lines1[3]]
     all_labels = ['Baseline Point', 'Power Ratio', 'Discharge Time', 
                   'Baseline Power (1.0x)', f'Baseline Time ({baseline_discharge_time:.2f}h)', 
                   f'Baseline Frequency ({baseline_freq} GHz)']
     
     ax1.legend(all_lines, all_labels, 
-              loc='upper left', 
+              loc='upper right',  # 改到右上角
               frameon=True, 
               shadow=True, 
-              fontsize=11,
-              framealpha=0.95,
+              fontsize=10.5,
+              framealpha=0.98,
               edgecolor='black',
               fancybox=True,
-              ncol=2)
+              ncol=2,
+              columnspacing=1.2,
+              labelspacing=0.6)
     
     # 设置标题
     ax1.set_title('CPU Frequency Impact on Power Consumption and Battery Life\n' + 
@@ -286,9 +298,9 @@ def create_visualizations(df, baseline_power, baseline_freq):
     ax1.set_xticks(df['CPU_Frequency'])
     ax1.set_xticklabels([f'{freq:.1f}' for freq in df['CPU_Frequency']])
     
-    # 添加背景色块标识基准区域
+    # 添加背景色块标识基准区域 - 使用更柔和的颜色
     ax1.axvspan(baseline_freq - 0.15, baseline_freq + 0.15, 
-                alpha=0.1, color='green', zorder=0)
+                alpha=0.12, color='gray', zorder=0)
     
     plt.tight_layout()
     filename = 'cpu_frequency_dual_axis.png'
